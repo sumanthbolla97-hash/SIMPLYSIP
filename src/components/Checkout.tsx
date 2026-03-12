@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, QrCode } from 'lucide-react';
 
@@ -187,6 +187,21 @@ export default function Checkout({ onBack, cart, onClearCart }: CheckoutProps) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       className="min-h-screen bg-[#F5F2ED] px-6 py-12 md:py-24"
+      onTouchStart={(e) => {
+        const touch = e.touches[0];
+        touchStart.current = { x: touch.clientX, y: touch.clientY };
+      }}
+      onTouchEnd={(e) => {
+        if (!touchStart.current) return;
+        const touch = e.changedTouches[0];
+        const dx = touchStart.current.x - touch.clientX;
+        const dy = touchStart.current.y - touch.clientY;
+        const isHorizontal = Math.abs(dx) > Math.abs(dy);
+        if (isHorizontal && dx > 60) {
+          onBack();
+        }
+        touchStart.current = null;
+      }}
     >
       <div className="max-w-2xl mx-auto">
         <button 
@@ -390,3 +405,4 @@ export default function Checkout({ onBack, cart, onClearCart }: CheckoutProps) {
     </motion.div>
   );
 }
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
