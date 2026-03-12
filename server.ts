@@ -8,7 +8,8 @@ import db from "./data/database";
 const app = express();
 const DEFAULT_PORT = 3000;
 const PORT = Number(process.env.PORT) || DEFAULT_PORT;
-const client = new OAuth2Client();
+const GOOGLE_CLIENT_ID = "855236257473-b7mll0j645j2h8fofm4kch15799vj4g4.apps.googleusercontent.com";
+const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 app.use(express.json());
 
@@ -50,7 +51,7 @@ app.post("/api/auth/google", async (req, res) => {
   try {
     const ticket = await client.verifyIdToken({
       idToken: credential,
-      audience: process.env.VITE_GOOGLE_CLIENT_ID,
+      audience: GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
     if (!payload) {
