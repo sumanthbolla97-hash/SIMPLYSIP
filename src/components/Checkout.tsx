@@ -62,6 +62,67 @@ const SUBSCRIPTION_ITEMS = [
   }
 ];
 
+function IngredientTicker({ desc }: { desc?: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [shouldScroll, setShouldScroll] = useState(false);
+  const [distance, setDistance] = useState(0);
+  const [duration, setDuration] = useState(12);
+
+  useEffect(() => {
+    if (!desc) return;
+    const update = () => {
+      const container = containerRef.current;
+      const content = contentRef.current;
+      if (!container || !content) return;
+      const overflow = content.scrollWidth > container.clientWidth;
+      setShouldScroll(overflow);
+      if (overflow) {
+        const travel = Math.max(0, content.scrollWidth - container.clientWidth);
+        const seconds = Math.min(18, Math.max(8, travel / 20));
+        setDistance(travel);
+        setDuration(seconds);
+      }
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [desc]);
+
+  if (!desc) return null;
+  const parts = desc
+    .split(/\u2022|•/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length === 0) return null;
+
+  return (
+    <div ref={containerRef} className="text-[11px] text-[#6F6A63] mt-1 max-w-full overflow-hidden whitespace-nowrap">
+      <div
+        ref={contentRef}
+        className={`inline-flex items-center ${shouldScroll ? "marquee" : ""}`}
+        style={
+          shouldScroll
+            ? ({
+                "--marquee-distance": `${distance}px`,
+                "--marquee-duration": `${duration}s`
+              } as React.CSSProperties)
+            : undefined
+        }
+      >
+        {parts.map((part, index) => (
+          <span key={`${part}-${index}`}>
+            {part}
+            {index < parts.length - 1 && (
+              <span className="mx-1 text-[#C6A05A]">{"\u2605"}</span>
+            )}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Checkout({ onBack, cart, onClearCart, onRemoveItem, onIncrementItem, onDecrementItem }: CheckoutProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [menuItems, setMenuItems] = useState<any[]>([]);
@@ -167,14 +228,9 @@ export default function Checkout({ onBack, cart, onClearCart, onRemoveItem, onIn
       .map((part) => part.trim())
       .filter(Boolean);
     if (parts.length === 0) return null;
-    const isLong = desc.length > 36;
     return (
       <div
-        className={`text-[11px] text-[#6F6A63] mt-1 ${
-          isLong
-            ? "overflow-x-auto no-scrollbar whitespace-nowrap sm:overflow-visible sm:whitespace-normal sm:line-clamp-2"
-            : "whitespace-normal"
-        }`}
+        className="text-[11px] text-[#6F6A63] mt-1 max-w-full overflow-x-auto no-scrollbar whitespace-nowrap sm:overflow-visible sm:whitespace-normal sm:line-clamp-2"
       >
         {parts.map((part, index) => (
           <span key={`${part}-${index}`}>
@@ -283,7 +339,7 @@ export default function Checkout({ onBack, cart, onClearCart, onRemoveItem, onIn
                     <div key={item.id} className="flex items-start justify-between gap-4">
                       <div className="flex-1">
                         <div className="text-base font-medium text-[#1A1A1A]">{item.name}</div>
-                        {renderIngredients(item.desc)}
+                        <IngredientTicker desc={item.desc} />
                         <div className="text-xs text-gray-500">
                           <span className="line-through mr-2">{rupee}{getMrp(item)}</span>
                           <span className="text-[#1A1A1A] font-semibold">{rupee}{getOffer(item)}</span>

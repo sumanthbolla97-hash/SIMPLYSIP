@@ -59,3 +59,20 @@ html {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+.marquee {
+  animation: marquee var(--marquee-duration, 12s) linear infinite;
+  will-change: transform;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(calc(-1 * var(--marquee-distance, 0px)));
+  }
+  100% {
+    transform: translateX(0);
+  }
+}

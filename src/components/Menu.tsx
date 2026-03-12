@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import type { Dispatch, SetStateAction } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { Dispatch, SetStateAction, CSSProperties } from 'react';
 import { motion } from 'motion/react';
 
 interface MenuProps {
@@ -7,6 +7,67 @@ interface MenuProps {
   setCart: Dispatch<SetStateAction<Record<string, number>>>;
   onCheckout: () => void;
   onCartTotalChange: (total: number) => void;
+}
+
+function IngredientTicker({ desc }: { desc?: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [shouldScroll, setShouldScroll] = useState(false);
+  const [distance, setDistance] = useState(0);
+  const [duration, setDuration] = useState(12);
+
+  useEffect(() => {
+    if (!desc) return;
+    const update = () => {
+      const container = containerRef.current;
+      const content = contentRef.current;
+      if (!container || !content) return;
+      const overflow = content.scrollWidth > container.clientWidth;
+      setShouldScroll(overflow);
+      if (overflow) {
+        const travel = Math.max(0, content.scrollWidth - container.clientWidth);
+        const seconds = Math.min(18, Math.max(8, travel / 20));
+        setDistance(travel);
+        setDuration(seconds);
+      }
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [desc]);
+
+  if (!desc) return null;
+  const parts = desc
+    .split(/\u2022|•/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length === 0) return null;
+
+  return (
+    <div ref={containerRef} className="mt-2 text-[11px] sm:text-xs text-[#6F6A63] max-w-full overflow-hidden whitespace-nowrap">
+      <div
+        ref={contentRef}
+        className={`inline-flex items-center ${shouldScroll ? "marquee" : ""}`}
+        style={
+          shouldScroll
+            ? ({
+                "--marquee-distance": `${distance}px`,
+                "--marquee-duration": `${duration}s`
+              } as CSSProperties)
+            : undefined
+        }
+      >
+        {parts.map((part, index) => (
+          <span key={`${part}-${index}`}>
+            {part}
+            {index < parts.length - 1 && (
+              <span className="mx-1 text-[#C6A05A]">{"\u2605"}</span>
+            )}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: MenuProps) {
@@ -184,14 +245,9 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
       .map((part) => part.trim())
       .filter(Boolean);
     if (parts.length === 0) return null;
-    const isLong = desc.length > 36;
     return (
       <div
-        className={`mt-2 text-[11px] sm:text-xs text-[#6F6A63] ${
-          isLong
-            ? "overflow-x-auto no-scrollbar whitespace-nowrap sm:overflow-visible sm:whitespace-normal sm:line-clamp-2"
-            : "whitespace-normal"
-        }`}
+        className="mt-2 text-[11px] sm:text-xs text-[#6F6A63] max-w-full overflow-x-auto no-scrollbar whitespace-nowrap sm:overflow-visible sm:whitespace-normal sm:line-clamp-2"
       >
         {parts.map((part, index) => (
           <span key={`${part}-${index}`}>
@@ -272,17 +328,17 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
           </div>
           <div className="px-2 text-center flex flex-col flex-1 min-w-0">
             <div>
-              <div className="flex items-center justify-center gap-2 mb-1 sm:mb-2">
-                <h4 className="text-base sm:text-xl font-semibold tracking-tight text-[#1D1C1A] font-display">{item.name}</h4>
+              <h4 className="text-base sm:text-xl font-semibold tracking-tight text-[#1D1C1A] font-display whitespace-nowrap overflow-hidden text-ellipsis">
+                {item.name}
+              </h4>
+              <div className="flex items-baseline justify-center gap-3 mt-2">
                 <span className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-[#6F6A63] border border-black/10 rounded-full min-w-[72px] h-6 px-2 flex items-center justify-center">
                   25% Off
                 </span>
-              </div>
-              {renderIngredients(item.desc)}
-              <div className="flex items-baseline justify-center gap-3 mt-2">
                 <span className="text-[11px] sm:text-sm text-[#A7A29C] line-through font-medium">{rupee}{getMrp(item)}</span>
                 <span className="text-sm sm:text-lg font-semibold text-[#1D1C1A]">{rupee}{getOffer(item)}</span>
               </div>
+              <IngredientTicker desc={item.desc} />
             </div>
             <div className="mt-4 sm:mt-5 flex items-center justify-center gap-2 mt-auto">
               {cart[item.id] ? (
