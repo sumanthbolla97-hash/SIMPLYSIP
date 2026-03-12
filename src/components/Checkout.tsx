@@ -84,6 +84,10 @@ export default function Checkout({ onBack, cart, onClearCart }: CheckoutProps) {
       .catch(() => setMenuItems(FALLBACK_MENU));
   }, []);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+  }, []);
+
   const requestLocation = () => {
     if (!navigator.geolocation) {
       setLocationError("Location not supported");
@@ -199,7 +203,7 @@ export default function Checkout({ onBack, cart, onClearCart }: CheckoutProps) {
 
         {step === 1 ? (
           <form onSubmit={handleProceedToPayment} className="space-y-10">
-            <div className="bg-white p-6 md:p-8 border border-black/5 rounded-3xl shadow-[0_30px_70px_-55px_rgba(0,0,0,0.35)]">
+            <div className="bg-white p-6 md:p-8 border border-black/5 rounded-3xl shadow-[0_30px_70px_-55px_rgba(0,0,0,0.35)]" id="cart-summary">
               <div className="flex items-center justify-between mb-6">
                 <div className="text-xs font-semibold tracking-[0.2em] uppercase text-gray-400">Cart Summary</div>
                 <div className="text-xs font-semibold tracking-[0.2em] uppercase text-gray-400">{cartCount} item{cartCount === 1 ? "" : "s"}</div>

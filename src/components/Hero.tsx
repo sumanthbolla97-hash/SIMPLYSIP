@@ -6,7 +6,7 @@ interface HeroProps {
 
 export default function Hero({ onSubscribe }: HeroProps) {
   return (
-    <section className="relative min-h-[100svh] w-full flex items-center overflow-hidden bg-[#FBFAF7]">
+    <section className="relative min-h-[75svh] sm:min-h-[100svh] w-full flex items-center overflow-hidden bg-[#FBFAF7]">
       <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.9),rgba(245,242,236,0.8),rgba(251,250,247,1))]"></div>
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-24 sm:pt-28 pb-16 sm:pb-20 w-full">

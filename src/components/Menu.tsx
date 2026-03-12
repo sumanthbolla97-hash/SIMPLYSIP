@@ -222,7 +222,7 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
   }, [combinedTotal, onCartTotalChange]);
 
   const renderGrid = (items: any[]) => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10 md:gap-14">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-10 md:gap-14">
       {items.map((item, index) => (
         <motion.div
           key={item.id || index}
@@ -232,7 +232,7 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
           transition={{ duration: 0.8, delay: index * 0.04, ease: [0.16, 1, 0.3, 1] }}
           className="group cursor-pointer flex flex-col"
         >
-          <div className="aspect-[3/4] w-full bg-[#FBFAF7] rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden mb-5 sm:mb-6 shadow-[0_35px_80px_-60px_rgba(0,0,0,0.35)] border border-black/5 transition-transform duration-500 group-hover:-translate-y-1">
+          <div className="aspect-[1/1] sm:aspect-[3/4] w-full bg-[#FBFAF7] rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden mb-4 sm:mb-6 shadow-[0_35px_80px_-60px_rgba(0,0,0,0.35)] border border-black/5 transition-transform duration-500 group-hover:-translate-y-1">
             <img 
               src={item.image} 
               alt={item.name}
@@ -282,7 +282,7 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
   );
 
   return (
-    <section id="menu" className="scroll-mt-24 sm:scroll-mt-28 py-24 sm:py-32 px-4 sm:px-6 bg-white">
+    <section id="menu" className="scroll-mt-24 sm:scroll-mt-28 py-16 sm:py-32 px-4 sm:px-6 bg-white">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
