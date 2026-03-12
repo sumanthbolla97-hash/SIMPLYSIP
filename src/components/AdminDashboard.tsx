@@ -52,7 +52,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
 
   const handleDelete = async (id: string) => {
     try {
-      const res = await fetch(`/api/menu/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/menu?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
       if (res.ok) {
         fetchItems();
       }
