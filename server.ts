@@ -8,7 +8,7 @@ import db from "./data/database";
 const app = express();
 const DEFAULT_PORT = 3000;
 const PORT = Number(process.env.PORT) || DEFAULT_PORT;
-const GOOGLE_CLIENT_ID = "855236257473-b7mll0j645j2h8fofm4kch15799vj4g4.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "131277848486-tq80mrkpkmdvjpfn9p6eedn0mo5vbno3.apps.googleusercontent.com";
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 app.use(express.json());

@@ -14,16 +14,27 @@ export default function GoogleLoginButton({ onLoginSuccess }: GoogleLoginButtonP
   const buttonRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleCredentialResponse = (response: any) => {
+    const handleCredentialResponse = async (response: any) => {
       const credential = response.credential;
-      const payload = JSON.parse(atob(credential.split('.')[1]));
-      onLoginSuccess({ name: payload.given_name, email: payload.email, picture: payload.picture });
+      try {
+        const res = await fetch("/api/auth/google", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ credential }),
+        });
+        const user = await res.json();
+        onLoginSuccess(user);
+      } catch (error) {
+        console.error("Login Failed:", error);
+      }
     };
 
     const initializeGoogleSignIn = () => {
       if (window.google && buttonRef.current) {
         window.google.accounts.id.initialize({
-          client_id: '855236257473-b7mll0j645j2h8fofm4kch15799vj4g4.apps.googleusercontent.com',
+          client_id: '131277848486-tq80mrkpkmdvjpfn9p6eedn0mo5vbno3.apps.googleusercontent.com',
           callback: handleCredentialResponse
         });
         window.google.accounts.id.renderButton(
