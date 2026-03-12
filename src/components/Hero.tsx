@@ -38,25 +38,25 @@ export default function Hero({ onSubscribe }: HeroProps) {
               Clean hydration for urban professionals who move with purpose.
             </motion.p>
 
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto"
-            >
-              <a 
-                href="#menu"
-                className="w-full sm:w-auto px-7 sm:px-8 py-4 bg-white text-[#1D1C1A] border border-black/10 rounded-full font-semibold tracking-[0.2em] uppercase text-[11px] hover:border-black/20 hover:shadow-[0_25px_60px_-40px_rgba(0,0,0,0.4)] transition-all duration-300 flex items-center justify-center"
-              >
-                Explore Menu
-              </a>
-              <button 
-                onClick={onSubscribe}
-                className="w-full sm:w-auto px-7 sm:px-8 py-4 bg-[#1D1C1A] text-white rounded-full font-semibold tracking-[0.2em] uppercase text-[11px] hover:bg-black transition-colors duration-300"
-              >
-                Start Weekly Plan
-              </button>
-            </motion.div>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto"
+        >
+          <a 
+            href="#menu"
+            className="w-full sm:w-auto px-7 sm:px-8 py-4 bg-white text-[#1D1C1A] border border-black/10 rounded-full font-semibold tracking-[0.2em] uppercase text-[11px] hover:border-black/20 hover:shadow-[0_25px_60px_-40px_rgba(0,0,0,0.4)] transition-all duration-300 flex items-center justify-center"
+          >
+            Explore Menu
+          </a>
+          <button 
+            onClick={onSubscribe}
+            className="w-full sm:w-auto px-7 sm:px-8 py-4 bg-[#1D1C1A] text-white rounded-full font-semibold tracking-[0.2em] uppercase text-[11px] hover:bg-black transition-colors duration-300"
+          >
+            Select Plan
+          </button>
+        </motion.div>
           </div>
 
           <motion.div
