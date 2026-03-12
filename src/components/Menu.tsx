@@ -184,8 +184,15 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
       .map((part) => part.trim())
       .filter(Boolean);
     if (parts.length === 0) return null;
+    const isLong = desc.length > 36;
     return (
-      <div className="mt-2 text-[11px] sm:text-xs text-[#6F6A63] leading-snug break-words line-clamp-2">
+      <div
+        className={`mt-2 text-[11px] sm:text-xs text-[#6F6A63] ${
+          isLong
+            ? "overflow-x-auto no-scrollbar whitespace-nowrap sm:overflow-visible sm:whitespace-normal sm:line-clamp-2"
+            : "whitespace-normal"
+        }`}
+      >
         {parts.map((part, index) => (
           <span key={`${part}-${index}`}>
             {part}

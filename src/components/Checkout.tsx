@@ -167,8 +167,15 @@ export default function Checkout({ onBack, cart, onClearCart, onRemoveItem, onIn
       .map((part) => part.trim())
       .filter(Boolean);
     if (parts.length === 0) return null;
+    const isLong = desc.length > 36;
     return (
-      <div className="text-[11px] text-[#6F6A63] mt-1">
+      <div
+        className={`text-[11px] text-[#6F6A63] mt-1 ${
+          isLong
+            ? "overflow-x-auto no-scrollbar whitespace-nowrap sm:overflow-visible sm:whitespace-normal sm:line-clamp-2"
+            : "whitespace-normal"
+        }`}
+      >
         {parts.map((part, index) => (
           <span key={`${part}-${index}`}>
             {part}
