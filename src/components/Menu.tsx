@@ -185,7 +185,7 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
       .filter(Boolean);
     if (parts.length === 0) return null;
     return (
-      <div className="mt-2 text-[11px] sm:text-xs text-[#6F6A63]">
+      <div className="mt-2 text-[11px] sm:text-xs text-[#6F6A63] leading-snug break-words line-clamp-2">
         {parts.map((part, index) => (
           <span key={`${part}-${index}`}>
             {part}
@@ -253,7 +253,7 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-50px" }}
           transition={{ duration: 0.8, delay: index * 0.04, ease: [0.16, 1, 0.3, 1] }}
-          className="group cursor-pointer flex flex-col"
+          className="group cursor-pointer flex flex-col min-w-0"
         >
           <div className="aspect-[4/5] sm:aspect-[3/4] w-full bg-[#FBFAF7] rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden mb-3 sm:mb-6 shadow-[0_35px_80px_-60px_rgba(0,0,0,0.35)] border border-black/5 transition-transform duration-500 group-hover:-translate-y-1">
             <img 
@@ -263,29 +263,31 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
               referrerPolicy="no-referrer"
             />
           </div>
-          <div className="px-2 text-center">
-            <div className="flex items-center justify-center gap-2 mb-1 sm:mb-2">
-              <h4 className="text-base sm:text-xl font-semibold tracking-tight text-[#1D1C1A] font-display">{item.name}</h4>
-              <span className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-[#6F6A63] border border-black/10 rounded-full px-2 py-1">25% Off</span>
+          <div className="px-2 text-center flex flex-col flex-1 min-w-0">
+            <div>
+              <div className="flex items-center justify-center gap-2 mb-1 sm:mb-2">
+                <h4 className="text-base sm:text-xl font-semibold tracking-tight text-[#1D1C1A] font-display">{item.name}</h4>
+                <span className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-[#6F6A63] border border-black/10 rounded-full px-2 py-1">25% Off</span>
+              </div>
+              {renderIngredients(item.desc)}
+              <div className="flex items-baseline justify-center gap-3 mt-2">
+                <span className="text-[11px] sm:text-sm text-[#A7A29C] line-through font-medium">{rupee}{getMrp(item)}</span>
+                <span className="text-sm sm:text-lg font-semibold text-[#1D1C1A]">{rupee}{getOffer(item)}</span>
+              </div>
             </div>
-            {renderIngredients(item.desc)}
-            <div className="flex items-baseline justify-center gap-3">
-              <span className="text-[11px] sm:text-sm text-[#A7A29C] line-through font-medium">{rupee}{getMrp(item)}</span>
-              <span className="text-sm sm:text-lg font-semibold text-[#1D1C1A]">{rupee}{getOffer(item)}</span>
-            </div>
-            <div className="mt-4 sm:mt-5 flex items-center justify-center gap-2">
+            <div className="mt-4 sm:mt-5 flex items-center justify-center gap-2 mt-auto">
               {cart[item.id] ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full justify-center">
                   <button
                     onClick={() => removeFromCart(item.id)}
-                    className="w-9 h-9 rounded-full border border-black/10 text-[#1D1C1A] font-medium hover:border-black/20 transition-colors"
+                    className="w-8 h-8 rounded-full border border-black/10 text-[#1D1C1A] font-medium hover:border-black/20 transition-colors"
                   >
                     -
                   </button>
                   <span className="text-sm font-medium text-[#1D1C1A] w-6 text-center">{cart[item.id]}</span>
                   <button
                     onClick={() => addToCart(item.id)}
-                    className="w-9 h-9 rounded-full border border-black/10 text-[#1D1C1A] font-medium hover:border-black/20 transition-colors"
+                    className="w-8 h-8 rounded-full border border-black/10 text-[#1D1C1A] font-medium hover:border-black/20 transition-colors"
                   >
                     +
                   </button>
@@ -293,7 +295,7 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
               ) : (
                 <button
                   onClick={() => addToCart(item.id)}
-                  className="px-6 py-2.5 bg-[#1D1C1A] text-white rounded-full font-semibold tracking-[0.2em] uppercase text-[10px] hover:bg-black transition-colors"
+                  className="w-full max-w-[180px] px-4 py-2.5 bg-[#1D1C1A] text-white rounded-full font-semibold tracking-[0.2em] uppercase text-[9px] sm:text-[10px] hover:bg-black transition-colors"
                 >
                   Add to Cart
                 </button>
@@ -315,7 +317,7 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="mb-16 sm:mb-20 text-center"
         >
-          <p className="text-[11px] uppercase tracking-[0.4em] text-[#6F6A63] mb-3">SIMPLY SIP {"\u2014"} FINAL MENU</p>
+          <p className="text-[11px] uppercase tracking-[0.4em] text-[#6F6A63] mb-3">SIMPLY SIP</p>
           <h2 className="text-3xl sm:text-4xl md:text-6xl font-semibold tracking-tight mb-3 text-[#1D1C1A] font-display">Layered flavours and pure expression.</h2>
           <p className="text-[11px] sm:text-xs uppercase tracking-[0.3em] text-[#6F6A63] font-medium">Flat 25% Off {"\u2014"} Limited Launch Offer</p>
         </motion.div>
