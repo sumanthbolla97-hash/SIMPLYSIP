@@ -6,6 +6,8 @@ export interface MenuItem {
   desc: string;
   image: string;
   price: number;
+  mrp?: number;
+  offerPrice?: number;
 }
 
 export const createSeedMenu = (): MenuItem[] => [
@@ -16,7 +18,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "Hulk Greens",
     desc: "Green Apple • Cucumber • Ginger • Spinach • Lime",
     image: "/images/hulk-greens.png",
-    price: 15
+    price: 129,
+    mrp: 170,
+    offerPrice: 129
   },
   {
     id: "2",
@@ -25,7 +29,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "Melon Booster",
     desc: "Watermelon • Cucumber • Mint",
     image: "/images/melon-booster.png",
-    price: 15
+    price: 119,
+    mrp: 150,
+    offerPrice: 119
   },
   {
     id: "3",
@@ -34,7 +40,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "ABC",
     desc: "Apple • Beetroot • Carrot",
     image: "/images/abc.png",
-    price: 15
+    price: 119,
+    mrp: 160,
+    offerPrice: 119
   },
   {
     id: "4",
@@ -43,7 +51,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "A-Star",
     desc: "Apple • Pomegranate",
     image: "/images/a-star.png",
-    price: 15
+    price: 129,
+    mrp: 170,
+    offerPrice: 129
   },
   {
     id: "5",
@@ -52,7 +62,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "AMG",
     desc: "Apple • Mint • Ginger",
     image: "/images/amg.png",
-    price: 15
+    price: 119,
+    mrp: 160,
+    offerPrice: 119
   },
   {
     id: "6",
@@ -61,7 +73,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "Ganga Jamuna",
     desc: "Orange • Mosambi",
     image: "/images/ganga-jamuna.png",
-    price: 15
+    price: 119,
+    mrp: 150,
+    offerPrice: 119
   },
   {
     id: "7",
@@ -70,7 +84,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "Coco Fresh",
     desc: "Tender Coconut Water",
     image: "/images/coco-fresh.png",
-    price: 15
+    price: 129,
+    mrp: 170,
+    offerPrice: 129
   },
   {
     id: "8",
@@ -79,7 +95,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "Sunshine Sip",
     desc: "Mosambi",
     image: "/images/sunshine-sip.png",
-    price: 15
+    price: 119,
+    mrp: 150,
+    offerPrice: 119
   },
   {
     id: "9",
@@ -88,7 +106,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "Golden Sunrise",
     desc: "Orange",
     image: "/images/golden-sunrise.png",
-    price: 15
+    price: 119,
+    mrp: 150,
+    offerPrice: 119
   },
   {
     id: "10",
@@ -97,7 +117,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "Orchard Gold",
     desc: "Apple",
     image: "/images/orchard-gold.png",
-    price: 15
+    price: 119,
+    mrp: 160,
+    offerPrice: 119
   },
   {
     id: "11",
@@ -106,7 +128,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "Tropical Bliss",
     desc: "Pineapple",
     image: "/images/tropical-bliss.png",
-    price: 15
+    price: 119,
+    mrp: 160,
+    offerPrice: 119
   },
   {
     id: "12",
@@ -115,7 +139,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "Velvet Vine",
     desc: "Pomegranate",
     image: "/images/velvet-vine.png",
-    price: 15
+    price: 129,
+    mrp: 170,
+    offerPrice: 129
   },
   {
     id: "13",
@@ -124,7 +150,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "Purple Crush",
     desc: "Black Grapes",
     image: "/images/purple-crush.png",
-    price: 15
+    price: 129,
+    mrp: 170,
+    offerPrice: 129
   },
   {
     id: "14",
@@ -133,7 +161,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "Verjus",
     desc: "Green Grapes",
     image: "/images/verjus.png",
-    price: 15
+    price: 129,
+    mrp: 170,
+    offerPrice: 129
   },
   {
     id: "15",
@@ -142,6 +172,8 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "Garden Joy",
     desc: "Carrot",
     image: "/images/garden-joy.png",
-    price: 15
+    price: 109,
+    mrp: 140,
+    offerPrice: 109
   }
 ];

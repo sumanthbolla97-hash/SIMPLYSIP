@@ -64,6 +64,7 @@ export default function Checkout({ onBack, cart, onClearCart }: CheckoutProps) {
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -405,4 +406,3 @@ export default function Checkout({ onBack, cart, onClearCart }: CheckoutProps) {
     </motion.div>
   );
 }
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
