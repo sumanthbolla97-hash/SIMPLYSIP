@@ -1,61 +1,35 @@
-import { useEffect, useRef } from 'react';
-
-declare global {
-  interface Window {
-    google: any;
-  }
-}
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "../firebaseConfig";
 
 interface GoogleLoginButtonProps {
   onLoginSuccess: (user: any) => void;
 }
 
-export default function GoogleLoginButton({ onLoginSuccess }: GoogleLoginButtonProps) {
-  const buttonRef = useRef<HTMLDivElement>(null);
+const GoogleLoginButton = ({ onLoginSuccess }: GoogleLoginButtonProps) => {
 
-  useEffect(() => {
-    const handleCredentialResponse = async (response: any) => {
-      const credential = response.credential;
-      try {
-        const res = await fetch("/api/auth/google", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ credential }),
-        });
-        const user = await res.json();
-        onLoginSuccess(user);
-      } catch (error) {
-        console.error("Login Failed:", error);
-      }
-    };
-
-    const initializeGoogleSignIn = () => {
-      if (window.google && buttonRef.current) {
-        window.google.accounts.id.initialize({
-          client_id: '131277848486-tq80mrkpkmdvjpfn9p6eedn0mo5vbno3.apps.googleusercontent.com',
-          callback: handleCredentialResponse
-        });
-        window.google.accounts.id.renderButton(
-          buttonRef.current,
-          { theme: 'outline', size: 'large', type: 'standard', text: 'signin_with' }  // Customization options
-        );
-        window.google.accounts.id.prompt(); // Optional: display the One Tap prompt
-      }
-    };
-
-    if (window.google) {
-      initializeGoogleSignIn();
-    } else {
-      const script = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
-      script?.addEventListener('load', initializeGoogleSignIn);
-      return () => {
-        script?.removeEventListener('load', initializeGoogleSignIn);
-      };
+  const handleGoogleSignIn = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      // The signed-in user info.
+      const user = result.user;
+      // This gives you a Google Access Token. You can use it to access the Google API.
+      // const credential = GoogleAuthProvider.credentialFromResult(result);
+      // const token = credential.accessToken;
+      onLoginSuccess(user);
+    } catch (error) {
+      console.error("Authentication error:", error);
+      // Handle Errors here.
     }
+  };
 
-  }, [onLoginSuccess]);
+  return (
+    <button 
+      onClick={handleGoogleSignIn} 
+      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+    >
+      Sign in with Google
+    </button>
+  );
+};
 
-  return <div ref={buttonRef}></div>;
-}
+export default GoogleLoginButton;
