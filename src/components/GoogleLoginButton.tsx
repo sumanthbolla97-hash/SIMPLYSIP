@@ -1,44 +1,50 @@
-import React from 'react';
+import { useEffect, useRef } from 'react';
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 
 interface GoogleLoginButtonProps {
   onLoginSuccess: (user: any) => void;
 }
 
-const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({ onLoginSuccess }) => {
-  const handleGoogleLogin = (response: any) => {
-    fetch("/api/auth/google", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ credential: response.credential }),
-    })
-      .then((res) => res.json())
-      .then((user) => {
-        if (user.error) {
-            throw new Error(user.error);
-        }
-        onLoginSuccess(user);
-      })
-      .catch((err) => {
-        console.error("Error logging in:", err);
-      });
-  };
+export default function GoogleLoginButton({ onLoginSuccess }: GoogleLoginButtonProps) {
+  const buttonRef = useRef<HTMLDivElement>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    const handleCredentialResponse = (response: any) => {
+      const credential = response.credential;
+      const payload = JSON.parse(atob(credential.split('.')[1]));
+      onLoginSuccess({ name: payload.given_name, email: payload.email, picture: payload.picture });
+    };
+
+    const initializeGoogleSignIn = () => {
+      if (window.google && buttonRef.current) {
+        window.google.accounts.id.initialize({
+          client_id: '855236257473-b7mll0j645j2h8fofm4kch15799vj4g4.apps.googleusercontent.com',
+          callback: handleCredentialResponse
+        });
+        window.google.accounts.id.renderButton(
+          buttonRef.current,
+          { theme: 'outline', size: 'large', type: 'standard', text: 'signin_with' }  // Customization options
+        );
+        window.google.accounts.id.prompt(); // Optional: display the One Tap prompt
+      }
+    };
+
     if (window.google) {
-      window.google.accounts.id.initialize({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-        callback: handleGoogleLogin,
-      });
-      window.google.accounts.id.renderButton(
-        document.getElementById("google-login-button"),
-        { theme: "outline", size: "large" } 
-      );
+      initializeGoogleSignIn();
+    } else {
+      const script = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+      script?.addEventListener('load', initializeGoogleSignIn);
+      return () => {
+        script?.removeEventListener('load', initializeGoogleSignIn);
+      };
     }
-  }, []);
 
-  return <div id="google-login-button"></div>;
-};
+  }, [onLoginSuccess]);
 
-export default GoogleLoginButton;
+  return <div ref={buttonRef}></div>;
+}

@@ -10,6 +10,7 @@ interface CheckoutProps {
   onRemoveItem: (id: string) => void;
   onIncrementItem: (id: string) => void;
   onDecrementItem: (id: string) => void;
+  onAddressUpdate: (addressData: any) => void;
 }
 
 const SECUNDERABAD_ZONES = [
@@ -93,7 +94,7 @@ function IngredientTicker({ desc }: { desc?: string }) {
   );
 }
 
-export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem, onIncrementItem, onDecrementItem }: CheckoutProps) {
+export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem, onIncrementItem, onDecrementItem, onAddressUpdate }: CheckoutProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [location, setLocation] = useState("");
@@ -217,32 +218,14 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
   };
 
   const handleSaveAddress = () => {
-    fetch('/api/user/address', {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${user.token}`
-        },
-        body: JSON.stringify({
-            address: formData.address,
-            area: formData.area,
-            addressType: addressType,
-            phone: formData.phone
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if(data.success) {
-            alert("Address saved!");
-        } else {
-            alert("Error saving address");
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Error saving address");
-    })
-  }
+    onAddressUpdate({
+        address: formData.address,
+        area: formData.area,
+        addressType: addressType,
+        phone: formData.phone
+    });
+    alert("Address saved!");
+}
 
   const handleProceedToPayment = (e: React.FormEvent) => {
     e.preventDefault();
