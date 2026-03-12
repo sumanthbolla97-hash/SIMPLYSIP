@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -14,14 +14,12 @@ export default function App() {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [cart, setCart] = useState<Record<string, number>>({});
-  const [cartTotal, setCartTotal] = useState(0);
   const [menuTotal, setMenuTotal] = useState(0);
   const [selectedPlan, setSelectedPlan] = useState<"weekly" | "monthly">("weekly");
   const [isPlanOpen, setIsPlanOpen] = useState(false);
+  const [user, setUser] = useState(null);
+
   const cartCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
-  const subscriptionTotal =
-    (cart.sub_weekly ? 699 : 0) + (cart.sub_monthly ? 2599 : 0);
-  const combinedTotal = menuTotal + subscriptionTotal;
 
   const handleSubscription = (plan: "weekly" | "monthly") => {
     setCart((prev) => {
@@ -64,6 +62,32 @@ export default function App() {
     });
   };
 
+  const handleLoginSuccess = (loggedInUser: any) => {
+    setUser(loggedInUser);
+  };
+
+  if (!user) {
+    return (
+        <div className="relative min-h-screen bg-[#FBFAF7] selection:bg-[#1D1C1A] selection:text-white">
+            <Header 
+                user={null}
+                onLogout={() => {}}
+                onCheckout={() => {}}
+                cartCount={0}
+                onLoginSuccess={handleLoginSuccess}
+            />
+            <div className="flex flex-col items-center justify-center text-center" style={{minHeight: '80vh'}}>
+                <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-[#1D1C1A] font-display">
+                    Welcome to <span className="text-[#C6A05A]">SimplySip Elixirs</span>
+                </h1>
+                <p className="mt-4 text-lg text-gray-600">
+                    Your daily dose of health, delivered.
+                </p>
+            </div>
+        </div>
+    );
+  }
+
   return (
     <div className="relative min-h-screen bg-[#FBFAF7] selection:bg-[#1D1C1A] selection:text-white">
       <AnimatePresence mode="wait">
@@ -86,6 +110,7 @@ export default function App() {
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           >
             <Checkout 
+              user={user}
               onBack={() => setIsCheckoutOpen(false)} 
               cart={cart}
               onClearCart={() => setCart({})}
@@ -103,10 +128,11 @@ export default function App() {
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           >
             <Header 
-              onSubscribe={() => setIsCheckoutOpen(true)} 
+              user={user}
+              onLogout={() => setUser(null)}
               onCheckout={() => setIsCheckoutOpen(true)}
               cartCount={cartCount}
-              cartTotal={combinedTotal}
+              onLoginSuccess={handleLoginSuccess}
             />
             <Hero onSubscribe={() => setIsPlanOpen(true)} />
             <Menu 

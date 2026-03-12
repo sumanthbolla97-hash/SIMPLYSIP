@@ -2,10 +2,13 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { createSeedMenu, MenuItem } from "./data/menu";
+import { OAuth2Client } from "google-auth-library";
+import db from "./data/database";
 
 const app = express();
 const DEFAULT_PORT = 3000;
 const PORT = Number(process.env.PORT) || DEFAULT_PORT;
+const client = new OAuth2Client();
 
 app.use(express.json());
 
@@ -40,6 +43,37 @@ app.delete("/api/menu/:id", (req, res) => {
   menuItems = menuItems.filter(item => item.id !== req.params.id);
   res.json({ success: true });
 });
+
+// Auth routes
+app.post("/api/auth/google", async (req, res) => {
+  const { credential } = req.body;
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.VITE_GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload) {
+      res.status(400).json({ error: "Invalid credential" });
+      return;
+    }
+    const { sub: id, email, name, picture } = payload;
+
+    let user = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
+
+    if (!user) {
+      db.prepare(
+        "INSERT INTO users (id, email, name, picture) VALUES (?, ?, ?, ?)"
+      ).run(id, email, name, picture);
+      user = { id, email, name, picture };
+    }
+
+    res.json(user);
+  } catch (error) {
+    res.status(400).json({ error: "Invalid credential" });
+  }
+});
+
 
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {

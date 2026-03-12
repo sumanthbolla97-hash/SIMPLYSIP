@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { ArrowLeft, QrCode, Trash2 } from 'lucide-react';
 
 interface CheckoutProps {
+  user: any;
   onBack: () => void;
   cart: Record<string, number>;
   onClearCart: () => void;
@@ -63,67 +64,36 @@ const SUBSCRIPTION_ITEMS = [
 ];
 
 function IngredientTicker({ desc }: { desc?: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [shouldScroll, setShouldScroll] = useState(false);
-  const [distance, setDistance] = useState(0);
-  const [duration, setDuration] = useState(12);
-
-  useEffect(() => {
-    if (!desc) return;
-    const update = () => {
-      const container = containerRef.current;
-      const content = contentRef.current;
-      if (!container || !content) return;
-      const overflow = content.scrollWidth > container.clientWidth;
-      setShouldScroll(overflow);
-      if (overflow) {
-        const travel = Math.max(0, content.scrollWidth - container.clientWidth);
-        const seconds = Math.min(18, Math.max(8, travel / 20));
-        setDistance(travel);
-        setDuration(seconds);
-      }
-    };
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, [desc]);
-
   if (!desc) return null;
+
   const parts = desc
     .split(/\u2022|•/)
     .map((part) => part.trim())
     .filter(Boolean);
-  if (parts.length === 0) return null;
+
+  if (parts.length <= 1 && !desc.match(/\u2022|•/)) {
+    return (
+      <p className="text-[11px] text-[#6F6A63] mt-1 line-clamp-2">
+        {desc}
+      </p>
+    );
+  }
 
   return (
-    <div ref={containerRef} className="text-[11px] text-[#6F6A63] mt-1 max-w-full overflow-hidden whitespace-nowrap">
-      <div
-        ref={contentRef}
-        className={`inline-flex items-center ${shouldScroll ? "marquee" : ""}`}
-        style={
-          shouldScroll
-            ? ({
-                "--marquee-distance": `${distance}px`,
-                "--marquee-duration": `${duration}s`
-              } as React.CSSProperties)
-            : undefined
-        }
-      >
-        {parts.map((part, index) => (
-          <span key={`${part}-${index}`}>
-            {part}
-            {index < parts.length - 1 && (
-              <span className="mx-1 text-[#C6A05A]">{"\u2605"}</span>
-            )}
-          </span>
-        ))}
-      </div>
+    <div className="text-[11px] text-[#6F6A63] mt-1 flex flex-wrap items-center gap-x-1.5">
+      {parts.map((part, index) => (
+        <React.Fragment key={`${part}-${index}`}>
+          <span>{part}</span>
+          {index < parts.length - 1 && (
+            <span className="text-[#C6A05A] text-[8px]">{"\u25CF"}</span>
+          )}
+        </React.Fragment>
+      ))}
     </div>
   );
 }
 
-export default function Checkout({ onBack, cart, onClearCart, onRemoveItem, onIncrementItem, onDecrementItem }: CheckoutProps) {
+export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem, onIncrementItem, onDecrementItem }: CheckoutProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [location, setLocation] = useState("");
@@ -132,11 +102,12 @@ export default function Checkout({ onBack, cart, onClearCart, onRemoveItem, onIn
   const [isLocating, setIsLocating] = useState(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    address: '',
-    area: ''
+    name: user?.name || '',
+    phone: user?.phone || '',
+    address: user?.address || '',
+    area: user?.area || ''
   });
+  const [addressType, setAddressType] = useState(user?.addressType || 'Home');
   const rupee = "\u20B9";
 
   useEffect(() => {
@@ -221,29 +192,6 @@ export default function Checkout({ onBack, cart, onClearCart, onRemoveItem, onIn
     return mod === 9 ? base : base + (9 - mod);
   };
 
-  const renderIngredients = (desc?: string) => {
-    if (!desc) return null;
-    const parts = desc
-      .split(/\u2022|•/)
-      .map((part) => part.trim())
-      .filter(Boolean);
-    if (parts.length === 0) return null;
-    return (
-      <div
-        className="text-[11px] text-[#6F6A63] mt-1 max-w-full overflow-x-auto no-scrollbar whitespace-nowrap sm:overflow-visible sm:whitespace-normal sm:line-clamp-2"
-      >
-        {parts.map((part, index) => (
-          <span key={`${part}-${index}`}>
-            {part}
-            {index < parts.length - 1 && (
-              <span className="mx-1 text-[#C6A05A]">{"\u2605"}</span>
-            )}
-          </span>
-        ))}
-      </div>
-    );
-  };
-
   const getMrp = (item: any) => {
     return Number(item.mrp ?? item.price ?? 0);
   };
@@ -267,6 +215,34 @@ export default function Checkout({ onBack, cart, onClearCart, onRemoveItem, onIn
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  const handleSaveAddress = () => {
+    fetch('/api/user/address', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${user.token}`
+        },
+        body: JSON.stringify({
+            address: formData.address,
+            area: formData.area,
+            addressType: addressType,
+            phone: formData.phone
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            alert("Address saved!");
+        } else {
+            alert("Error saving address");
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Error saving address");
+    })
+  }
 
   const handleProceedToPayment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -334,19 +310,21 @@ export default function Checkout({ onBack, cart, onClearCart, onRemoveItem, onIn
               {cartCount === 0 ? (
                 <div className="text-sm text-gray-500">Your cart is empty.</div>
               ) : (
-                <div className="space-y-4">
+                <div className="divide-y divide-black/5">
                   {cartItems.map((item) => (
-                    <div key={item.id} className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="text-base font-medium text-[#1A1A1A]">{item.name}</div>
-                        <IngredientTicker desc={item.desc} />
+                    <div key={item.id} className="py-4 first:pt-0 last:pb-0">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="text-base font-medium text-[#1A1A1A]">{item.name}</div>
+                          <IngredientTicker desc={item.desc} />
+                        </div>
+                        <div className="text-sm font-semibold text-[#1A1A1A] pl-2">{rupee}{getOffer(item) * cart[item.id]}</div>
+                      </div>
+                      <div className="flex items-end justify-between mt-2">
                         <div className="text-xs text-gray-500">
                           <span className="line-through mr-2">{rupee}{getMrp(item)}</span>
                           <span className="text-[#1A1A1A] font-semibold">{rupee}{getOffer(item)}</span>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-sm font-semibold text-[#1A1A1A]">{rupee}{getOffer(item) * cart[item.id]}</div>
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
@@ -365,15 +343,15 @@ export default function Checkout({ onBack, cart, onClearCart, onRemoveItem, onIn
                           >
                             +
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => onRemoveItem(item.id)}
+                            aria-label={`Remove ${item.name}`}
+                            className="w-7 h-7 rounded-full border border-black/10 text-gray-400 hover:text-[#1A1A1A] hover:border-black/20 transition-colors flex items-center justify-center"
+                          >
+                            <Trash2 size={12} />
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => onRemoveItem(item.id)}
-                          aria-label={`Remove ${item.name}`}
-                          className="w-7 h-7 rounded-full border border-black/10 text-gray-400 hover:text-[#1A1A1A] hover:border-black/20 transition-colors flex items-center justify-center"
-                        >
-                          <Trash2 size={12} />
-                        </button>
                       </div>
                     </div>
                   ))}
@@ -459,6 +437,35 @@ export default function Checkout({ onBack, cart, onClearCart, onRemoveItem, onIn
                     required
                   />
                 </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-[10px] font-semibold tracking-[0.2em] uppercase text-gray-400">Address Type</label>
+                <div className="flex items-center gap-x-6">
+                    {['Home', 'Office', 'Other'].map(type => (
+                        <label key={type} className="flex items-center gap-2">
+                            <input 
+                                type="radio" 
+                                name="addressType" 
+                                value={type} 
+                                checked={addressType === type}
+                                onChange={(e) => setAddressType(e.target.value)}
+                                className="h-4 w-4 text-black border-gray-300 focus:ring-black"
+                            />
+                            <span className="text-sm text-gray-600">{type}</span>
+                        </label>
+                    ))}
+                </div>
+              </div>
+
+              <div className="pt-4">
+                <button 
+                    type="button" 
+                    onClick={handleSaveAddress}
+                    className="px-5 py-3 rounded-full border border-black/10 text-[10px] font-semibold tracking-[0.2em] uppercase text-[#1D1C1A] hover:border-black/20 transition-colors"
+                >
+                    Save Address
+                </button>
               </div>
 
               <div className="space-y-3">
