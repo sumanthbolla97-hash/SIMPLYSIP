@@ -267,7 +267,9 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
             <div>
               <div className="flex items-center justify-center gap-2 mb-1 sm:mb-2">
                 <h4 className="text-base sm:text-xl font-semibold tracking-tight text-[#1D1C1A] font-display">{item.name}</h4>
-                <span className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-[#6F6A63] border border-black/10 rounded-full px-2 py-1">25% Off</span>
+                <span className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-[#6F6A63] border border-black/10 rounded-full min-w-[72px] h-6 px-2 flex items-center justify-center">
+                  25% Off
+                </span>
               </div>
               {renderIngredients(item.desc)}
               <div className="flex items-baseline justify-center gap-3 mt-2">
