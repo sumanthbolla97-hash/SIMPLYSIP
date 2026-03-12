@@ -10,6 +10,7 @@ interface StickyCTAProps {
 export default function StickyCTA({ onSubscribePlan, selectedPlan, onPlanChange }: StickyCTAProps) {
   const [isVisible, setIsVisible] = useState(false);
   const plan = selectedPlan;
+  const rupee = "\u20B9";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,8 +36,8 @@ export default function StickyCTA({ onSubscribePlan, selectedPlan, onPlanChange 
           className="fixed bottom-4 sm:bottom-6 left-0 right-0 px-4 sm:px-6 z-50 pointer-events-none flex justify-center"
         >
           <div className="bg-white/85 backdrop-blur-2xl border border-black/5 p-3 rounded-full shadow-[0_20px_60px_-40px_rgba(0,0,0,0.4)] pointer-events-auto w-full max-w-md mx-auto">
-            <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
-              <div className="pl-3 sm:pl-4">
+            <div className="relative flex items-center justify-between gap-3">
+              <div className="pl-3 sm:pl-4 flex-1">
                 <div className="inline-flex rounded-full border border-black/10 bg-white/80 p-1">
                   <button
                     onClick={() => onPlanChange("weekly")}
@@ -57,11 +58,11 @@ export default function StickyCTA({ onSubscribePlan, selectedPlan, onPlanChange 
                 </div>
               </div>
 
-              <div className="text-center text-lg font-semibold text-[#1D1C1A] font-display">
-                {plan === "weekly" ? "₹699" : "₹2599"}
+              <div className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold text-[#1D1C1A] font-display">
+                {plan === "weekly" ? `${rupee}699` : `${rupee}2599`}
               </div>
 
-              <div className="pr-2 sm:pr-3">
+              <div className="pr-2 sm:pr-3 flex-1 flex justify-end">
                 <button 
                   onClick={() => onSubscribePlan(plan)}
                   className="px-5 sm:px-6 py-2.5 bg-[#1D1C1A] text-white rounded-full font-semibold tracking-[0.2em] uppercase text-[10px] hover:bg-black transition-colors"

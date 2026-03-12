@@ -12,13 +12,15 @@ interface MenuProps {
 export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: MenuProps) {
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const rupee = "\u20B9";
+  const bullet = "\u2022";
 
   const fallbackMenu = [
     {
       id: "1",
       category: "Signature Blends",
       name: "Hulk Greens",
-      desc: "Green Apple • Cucumber • Ginger • Spinach • Lime",
+      desc: `Green Apple ${bullet} Cucumber ${bullet} Ginger ${bullet} Spinach ${bullet} Lime`,
       image: "/images/hulk-greens.png",
       mrp: 170,
       offerPrice: 129
@@ -27,7 +29,7 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
       id: "2",
       category: "Signature Blends",
       name: "Melon Booster",
-      desc: "Watermelon • Cucumber • Mint",
+      desc: `Watermelon ${bullet} Cucumber ${bullet} Mint`,
       image: "/images/melon-booster.png",
       mrp: 150,
       offerPrice: 119
@@ -36,7 +38,7 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
       id: "3",
       category: "Signature Blends",
       name: "ABC",
-      desc: "Apple • Beetroot • Carrot",
+      desc: `Apple ${bullet} Beetroot ${bullet} Carrot`,
       image: "/images/abc.png",
       mrp: 160,
       offerPrice: 119
@@ -45,7 +47,7 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
       id: "4",
       category: "Signature Blends",
       name: "A-Star",
-      desc: "Apple • Pomegranate",
+      desc: `Apple ${bullet} Pomegranate`,
       image: "/images/a-star.png",
       mrp: 170,
       offerPrice: 129
@@ -54,7 +56,7 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
       id: "5",
       category: "Signature Blends",
       name: "AMG",
-      desc: "Apple • Mint • Ginger",
+      desc: `Apple ${bullet} Mint ${bullet} Ginger`,
       image: "/images/amg.png",
       mrp: 160,
       offerPrice: 119
@@ -63,7 +65,7 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
       id: "6",
       category: "Signature Blends",
       name: "Ganga Jamuna",
-      desc: "Orange • Mosambi",
+      desc: `Orange ${bullet} Mosambi`,
       image: "/images/ganga-jamuna.png",
       mrp: 150,
       offerPrice: 119
@@ -175,6 +177,27 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
     return mod === 9 ? base : base + (9 - mod);
   };
 
+  const renderIngredients = (desc?: string) => {
+    if (!desc) return null;
+    const parts = desc
+      .split(/\u2022|•/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+    if (parts.length === 0) return null;
+    return (
+      <div className="mt-2 text-[11px] sm:text-xs text-[#6F6A63]">
+        {parts.map((part, index) => (
+          <span key={`${part}-${index}`}>
+            {part}
+            {index < parts.length - 1 && (
+              <span className="mx-1 text-[#C6A05A]">{"\u2605"}</span>
+            )}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
   const getMrp = (item: any) => {
     return Number(item.mrp ?? item.price ?? 0);
   };
@@ -222,7 +245,7 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
   }, [combinedTotal, onCartTotalChange]);
 
   const renderGrid = (items: any[]) => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-10 md:gap-14">
+    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-10 md:gap-14">
       {items.map((item, index) => (
         <motion.div
           key={item.id || index}
@@ -232,7 +255,7 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
           transition={{ duration: 0.8, delay: index * 0.04, ease: [0.16, 1, 0.3, 1] }}
           className="group cursor-pointer flex flex-col"
         >
-          <div className="aspect-[1/1] sm:aspect-[3/4] w-full bg-[#FBFAF7] rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden mb-4 sm:mb-6 shadow-[0_35px_80px_-60px_rgba(0,0,0,0.35)] border border-black/5 transition-transform duration-500 group-hover:-translate-y-1">
+          <div className="aspect-[4/5] sm:aspect-[3/4] w-full bg-[#FBFAF7] rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden mb-3 sm:mb-6 shadow-[0_35px_80px_-60px_rgba(0,0,0,0.35)] border border-black/5 transition-transform duration-500 group-hover:-translate-y-1">
             <img 
               src={item.image} 
               alt={item.name}
@@ -241,15 +264,16 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
             />
           </div>
           <div className="px-2 text-center">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <h4 className="text-lg sm:text-xl font-semibold tracking-tight text-[#1D1C1A] font-display">{item.name}</h4>
+            <div className="flex items-center justify-center gap-2 mb-1 sm:mb-2">
+              <h4 className="text-base sm:text-xl font-semibold tracking-tight text-[#1D1C1A] font-display">{item.name}</h4>
               <span className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-[#6F6A63] border border-black/10 rounded-full px-2 py-1">25% Off</span>
             </div>
+            {renderIngredients(item.desc)}
             <div className="flex items-baseline justify-center gap-3">
-              <span className="text-xs sm:text-sm text-[#A7A29C] line-through font-medium">₹{getMrp(item)}</span>
-              <span className="text-base sm:text-lg font-semibold text-[#1D1C1A]">₹{getOffer(item)}</span>
+              <span className="text-[11px] sm:text-sm text-[#A7A29C] line-through font-medium">{rupee}{getMrp(item)}</span>
+              <span className="text-sm sm:text-lg font-semibold text-[#1D1C1A]">{rupee}{getOffer(item)}</span>
             </div>
-            <div className="mt-5 flex items-center justify-center gap-2">
+            <div className="mt-4 sm:mt-5 flex items-center justify-center gap-2">
               {cart[item.id] ? (
                 <div className="flex items-center gap-2">
                   <button
@@ -291,9 +315,9 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="mb-16 sm:mb-20 text-center"
         >
-          <p className="text-[11px] uppercase tracking-[0.4em] text-[#6F6A63] mb-3">SIMPLY SIP — FINAL MENU</p>
+          <p className="text-[11px] uppercase tracking-[0.4em] text-[#6F6A63] mb-3">SIMPLY SIP {"\u2014"} FINAL MENU</p>
           <h2 className="text-3xl sm:text-4xl md:text-6xl font-semibold tracking-tight mb-3 text-[#1D1C1A] font-display">Layered flavours and pure expression.</h2>
-          <p className="text-[11px] sm:text-xs uppercase tracking-[0.3em] text-[#6F6A63] font-medium">Flat 25% Off — Limited Launch Offer</p>
+          <p className="text-[11px] sm:text-xs uppercase tracking-[0.3em] text-[#6F6A63] font-medium">Flat 25% Off {"\u2014"} Limited Launch Offer</p>
         </motion.div>
 
         {loading ? (
@@ -304,7 +328,7 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
               <div className="flex items-center justify-center">
                 <div className="bg-white/90 backdrop-blur border border-black/5 rounded-full px-5 sm:px-6 py-3 shadow-[0_20px_60px_-40px_rgba(0,0,0,0.35)] text-sm font-medium text-[#1D1C1A] flex items-center gap-4">
                   <span>
-                    Cart: {cartCount} item{cartCount > 1 ? "s" : ""} • ₹{combinedTotal}
+                    Cart: {cartCount} item{cartCount > 1 ? "s" : ""} {"\u2022"} {rupee}{combinedTotal}
                   </span>
                   <button
                     onClick={onCheckout}

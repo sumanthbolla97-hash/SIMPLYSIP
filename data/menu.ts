@@ -10,13 +10,15 @@ export interface MenuItem {
   offerPrice?: number;
 }
 
+const BULLET = "\u2022";
+
 export const createSeedMenu = (): MenuItem[] => [
   {
     id: "1",
     day: "Day 1",
     category: "Signature Blends",
     name: "Hulk Greens",
-    desc: "Green Apple • Cucumber • Ginger • Spinach • Lime",
+    desc: `Green Apple ${BULLET} Cucumber ${BULLET} Ginger ${BULLET} Spinach ${BULLET} Lime`,
     image: "/images/hulk-greens.png",
     price: 129,
     mrp: 170,
@@ -27,7 +29,7 @@ export const createSeedMenu = (): MenuItem[] => [
     day: "Day 2",
     category: "Signature Blends",
     name: "Melon Booster",
-    desc: "Watermelon • Cucumber • Mint",
+    desc: `Watermelon ${BULLET} Cucumber ${BULLET} Mint`,
     image: "/images/melon-booster.png",
     price: 119,
     mrp: 150,
@@ -38,7 +40,7 @@ export const createSeedMenu = (): MenuItem[] => [
     day: "Day 3",
     category: "Signature Blends",
     name: "ABC",
-    desc: "Apple • Beetroot • Carrot",
+    desc: `Apple ${BULLET} Beetroot ${BULLET} Carrot`,
     image: "/images/abc.png",
     price: 119,
     mrp: 160,
@@ -49,7 +51,7 @@ export const createSeedMenu = (): MenuItem[] => [
     day: "Day 4",
     category: "Signature Blends",
     name: "A-Star",
-    desc: "Apple • Pomegranate",
+    desc: `Apple ${BULLET} Pomegranate`,
     image: "/images/a-star.png",
     price: 129,
     mrp: 170,
@@ -60,7 +62,7 @@ export const createSeedMenu = (): MenuItem[] => [
     day: "Day 5",
     category: "Signature Blends",
     name: "AMG",
-    desc: "Apple • Mint • Ginger",
+    desc: `Apple ${BULLET} Mint ${BULLET} Ginger`,
     image: "/images/amg.png",
     price: 119,
     mrp: 160,
@@ -71,7 +73,7 @@ export const createSeedMenu = (): MenuItem[] => [
     day: "Day 6",
     category: "Signature Blends",
     name: "Ganga Jamuna",
-    desc: "Orange • Mosambi",
+    desc: `Orange ${BULLET} Mosambi`,
     image: "/images/ganga-jamuna.png",
     price: 119,
     mrp: 150,

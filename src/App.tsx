@@ -36,6 +36,34 @@ export default function App() {
     setIsCheckoutOpen(true);
   };
 
+  const handleRemoveItem = (id: string) => {
+    setCart((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  };
+
+  const handleIncrementItem = (id: string) => {
+    setCart((prev) => ({
+      ...prev,
+      [id]: (prev[id] ?? 0) + 1
+    }));
+  };
+
+  const handleDecrementItem = (id: string) => {
+    setCart((prev) => {
+      const next = { ...prev };
+      if (!next[id]) return prev;
+      if (next[id] === 1) {
+        delete next[id];
+      } else {
+        next[id] -= 1;
+      }
+      return next;
+    });
+  };
+
   return (
     <div className="relative min-h-screen bg-[#FBFAF7] selection:bg-[#1D1C1A] selection:text-white">
       <AnimatePresence mode="wait">
@@ -61,6 +89,9 @@ export default function App() {
               onBack={() => setIsCheckoutOpen(false)} 
               cart={cart}
               onClearCart={() => setCart({})}
+              onRemoveItem={handleRemoveItem}
+              onIncrementItem={handleIncrementItem}
+              onDecrementItem={handleDecrementItem}
             />
           </motion.div>
         ) : (

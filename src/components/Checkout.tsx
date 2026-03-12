@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, QrCode } from 'lucide-react';
+import { ArrowLeft, QrCode, Trash2 } from 'lucide-react';
 
 interface CheckoutProps {
   onBack: () => void;
   cart: Record<string, number>;
   onClearCart: () => void;
+  onRemoveItem: (id: string) => void;
+  onIncrementItem: (id: string) => void;
+  onDecrementItem: (id: string) => void;
 }
 
 const SECUNDERABAD_ZONES = [
@@ -22,22 +25,24 @@ const SECUNDERABAD_ZONES = [
   "Trimulgherry"
 ];
 
+const BULLET = "\u2022";
+
 const FALLBACK_MENU = [
-  { id: "1", name: "Hulk Greens", mrp: 170, offerPrice: 129, image: "/images/hulk-greens.png" },
-  { id: "2", name: "Melon Booster", mrp: 150, offerPrice: 119, image: "/images/melon-booster.png" },
-  { id: "3", name: "ABC", mrp: 160, offerPrice: 119, image: "/images/abc.png" },
-  { id: "4", name: "A-Star", mrp: 170, offerPrice: 129, image: "/images/a-star.png" },
-  { id: "5", name: "AMG", mrp: 160, offerPrice: 119, image: "/images/amg.png" },
-  { id: "6", name: "Ganga Jamuna", mrp: 150, offerPrice: 119, image: "/images/ganga-jamuna.png" },
-  { id: "7", name: "Coco Fresh", mrp: 170, offerPrice: 129, image: "/images/coco-fresh.png" },
-  { id: "8", name: "Sunshine Sip", mrp: 150, offerPrice: 119, image: "/images/sunshine-sip.png" },
-  { id: "9", name: "Golden Sunrise", mrp: 150, offerPrice: 119, image: "/images/golden-sunrise.png" },
-  { id: "10", name: "Orchard Gold", mrp: 160, offerPrice: 119, image: "/images/orchard-gold.png" },
-  { id: "11", name: "Tropical Bliss", mrp: 160, offerPrice: 119, image: "/images/tropical-bliss.png" },
-  { id: "12", name: "Velvet Vine", mrp: 170, offerPrice: 129, image: "/images/velvet-vine.png" },
-  { id: "13", name: "Purple Crush", mrp: 170, offerPrice: 129, image: "/images/purple-crush.png" },
-  { id: "14", name: "Verjus", mrp: 170, offerPrice: 129, image: "/images/verjus.png" },
-  { id: "15", name: "Garden Joy", mrp: 140, offerPrice: 109, image: "/images/garden-joy.png" }
+  { id: "1", name: "Hulk Greens", desc: `Green Apple ${BULLET} Cucumber ${BULLET} Ginger ${BULLET} Spinach ${BULLET} Lime`, mrp: 170, offerPrice: 129, image: "/images/hulk-greens.png" },
+  { id: "2", name: "Melon Booster", desc: `Watermelon ${BULLET} Cucumber ${BULLET} Mint`, mrp: 150, offerPrice: 119, image: "/images/melon-booster.png" },
+  { id: "3", name: "ABC", desc: `Apple ${BULLET} Beetroot ${BULLET} Carrot`, mrp: 160, offerPrice: 119, image: "/images/abc.png" },
+  { id: "4", name: "A-Star", desc: `Apple ${BULLET} Pomegranate`, mrp: 170, offerPrice: 129, image: "/images/a-star.png" },
+  { id: "5", name: "AMG", desc: `Apple ${BULLET} Mint ${BULLET} Ginger`, mrp: 160, offerPrice: 119, image: "/images/amg.png" },
+  { id: "6", name: "Ganga Jamuna", desc: `Orange ${BULLET} Mosambi`, mrp: 150, offerPrice: 119, image: "/images/ganga-jamuna.png" },
+  { id: "7", name: "Coco Fresh", desc: "Tender Coconut Water", mrp: 170, offerPrice: 129, image: "/images/coco-fresh.png" },
+  { id: "8", name: "Sunshine Sip", desc: "Mosambi", mrp: 150, offerPrice: 119, image: "/images/sunshine-sip.png" },
+  { id: "9", name: "Golden Sunrise", desc: "Orange", mrp: 150, offerPrice: 119, image: "/images/golden-sunrise.png" },
+  { id: "10", name: "Orchard Gold", desc: "Apple", mrp: 160, offerPrice: 119, image: "/images/orchard-gold.png" },
+  { id: "11", name: "Tropical Bliss", desc: "Pineapple", mrp: 160, offerPrice: 119, image: "/images/tropical-bliss.png" },
+  { id: "12", name: "Velvet Vine", desc: "Pomegranate", mrp: 170, offerPrice: 129, image: "/images/velvet-vine.png" },
+  { id: "13", name: "Purple Crush", desc: "Black Grapes", mrp: 170, offerPrice: 129, image: "/images/purple-crush.png" },
+  { id: "14", name: "Verjus", desc: "Green Grapes", mrp: 170, offerPrice: 129, image: "/images/verjus.png" },
+  { id: "15", name: "Garden Joy", desc: "Carrot", mrp: 140, offerPrice: 109, image: "/images/garden-joy.png" }
 ];
 
 const SUBSCRIPTION_ITEMS = [
@@ -57,7 +62,7 @@ const SUBSCRIPTION_ITEMS = [
   }
 ];
 
-export default function Checkout({ onBack, cart, onClearCart }: CheckoutProps) {
+export default function Checkout({ onBack, cart, onClearCart, onRemoveItem, onIncrementItem, onDecrementItem }: CheckoutProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [location, setLocation] = useState("");
@@ -71,6 +76,7 @@ export default function Checkout({ onBack, cart, onClearCart }: CheckoutProps) {
     address: '',
     area: ''
   });
+  const rupee = "\u20B9";
 
   useEffect(() => {
     fetch('/api/menu')
@@ -88,6 +94,37 @@ export default function Checkout({ onBack, cart, onClearCart }: CheckoutProps) {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
   }, []);
+
+  useEffect(() => {
+    const handleTouchStart = (e: TouchEvent) => {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      if (tag && ["input", "textarea", "select", "button"].includes(tag)) {
+        return;
+      }
+      const touch = e.touches[0];
+      touchStart.current = { x: touch.clientX, y: touch.clientY };
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (!touchStart.current) return;
+      const touch = e.changedTouches[0];
+      const dx = touchStart.current.x - touch.clientX;
+      const dy = touchStart.current.y - touch.clientY;
+      const isHorizontal = Math.abs(dx) > Math.abs(dy) * 1.2;
+      if (isHorizontal && dx > 60) {
+        onBack();
+      }
+      touchStart.current = null;
+    };
+
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchend", handleTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [onBack]);
 
   const requestLocation = () => {
     if (!navigator.geolocation) {
@@ -121,6 +158,27 @@ export default function Checkout({ onBack, cart, onClearCart }: CheckoutProps) {
     const base = Math.ceil(value);
     const mod = base % 10;
     return mod === 9 ? base : base + (9 - mod);
+  };
+
+  const renderIngredients = (desc?: string) => {
+    if (!desc) return null;
+    const parts = desc
+      .split(/\u2022|•/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+    if (parts.length === 0) return null;
+    return (
+      <div className="text-[11px] text-[#6F6A63] mt-1">
+        {parts.map((part, index) => (
+          <span key={`${part}-${index}`}>
+            {part}
+            {index < parts.length - 1 && (
+              <span className="mx-1 text-[#C6A05A]">{"\u2605"}</span>
+            )}
+          </span>
+        ))}
+      </div>
+    );
   };
 
   const getMrp = (item: any) => {
@@ -172,11 +230,11 @@ export default function Checkout({ onBack, cart, onClearCart }: CheckoutProps) {
     const itemsText = cartItems
       .map((item) => {
         const desc = item.desc ? ` (${item.desc})` : "";
-        return `${item.name}${desc} x${cart[item.id]} - ₹${getOffer(item)} each`;
+        return `${item.name}${desc} x${cart[item.id]} - ${rupee}${getOffer(item)} each`;
       })
       .join("\n");
     const accuracyText = locationAccuracy ? ` (accuracy ${locationAccuracy}m)` : "";
-    const message = `Hi Simply Sip, I placed an order.\n\nItems:\n${itemsText}\n\nSubtotal: ₹${cartTotal}\nDelivery: ₹${deliveryFee}\nTotal: ₹${grandTotal}\n\nName: ${formData.name}\nAddress: ${formData.address}\nArea: ${formData.area}\nLocation: ${location}${accuracyText}\nPayment Done.`;
+    const message = `Hi Simply Sip, I placed an order.\n\nItems:\n${itemsText}\n\nSubtotal: ${rupee}${cartTotal}\nDelivery: ${rupee}${deliveryFee}\nTotal: ${rupee}${grandTotal}\n\nName: ${formData.name}\nAddress: ${formData.address}\nArea: ${formData.area}\nLocation: ${location}${accuracyText}\nPayment Done.`;
     const whatsappUrl = `https://wa.me/919999999999?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
     onClearCart();
@@ -188,21 +246,6 @@ export default function Checkout({ onBack, cart, onClearCart }: CheckoutProps) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       className="min-h-screen bg-[#F5F2ED] px-6 py-12 md:py-24"
-      onTouchStart={(e) => {
-        const touch = e.touches[0];
-        touchStart.current = { x: touch.clientX, y: touch.clientY };
-      }}
-      onTouchEnd={(e) => {
-        if (!touchStart.current) return;
-        const touch = e.changedTouches[0];
-        const dx = touchStart.current.x - touch.clientX;
-        const dy = touchStart.current.y - touch.clientY;
-        const isHorizontal = Math.abs(dx) > Math.abs(dy);
-        if (isHorizontal && dx > 60) {
-          onBack();
-        }
-        touchStart.current = null;
-      }}
     >
       <div className="max-w-2xl mx-auto">
         <button 
@@ -231,37 +274,63 @@ export default function Checkout({ onBack, cart, onClearCart }: CheckoutProps) {
                 <div className="space-y-4">
                   {cartItems.map((item) => (
                     <div key={item.id} className="flex items-start justify-between gap-4">
-                      <div>
+                      <div className="flex-1">
                         <div className="text-base font-medium text-[#1A1A1A]">{item.name}</div>
-                        {item.desc && (
-                          <div className="text-xs text-gray-500 mt-1">{item.desc}</div>
-                        )}
+                        {renderIngredients(item.desc)}
                         <div className="text-xs text-gray-500">
-                          <span className="line-through mr-2">₹{getMrp(item)}</span>
-                          <span className="text-[#1A1A1A] font-semibold">₹{getOffer(item)}</span>
-                          <span className="ml-2">x{cart[item.id]}</span>
+                          <span className="line-through mr-2">{rupee}{getMrp(item)}</span>
+                          <span className="text-[#1A1A1A] font-semibold">{rupee}{getOffer(item)}</span>
                         </div>
                       </div>
-                      <div className="text-sm font-semibold text-[#1A1A1A]">₹{getOffer(item) * cart[item.id]}</div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-sm font-semibold text-[#1A1A1A]">{rupee}{getOffer(item) * cart[item.id]}</div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => onDecrementItem(item.id)}
+                            aria-label={`Decrease ${item.name}`}
+                            className="w-7 h-7 rounded-full border border-black/10 text-[#1A1A1A] font-medium hover:border-black/20 transition-colors flex items-center justify-center"
+                          >
+                            -
+                          </button>
+                          <span className="text-xs font-medium text-[#1A1A1A] w-6 text-center">{cart[item.id]}</span>
+                          <button
+                            type="button"
+                            onClick={() => onIncrementItem(item.id)}
+                            aria-label={`Increase ${item.name}`}
+                            className="w-7 h-7 rounded-full border border-black/10 text-[#1A1A1A] font-medium hover:border-black/20 transition-colors flex items-center justify-center"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => onRemoveItem(item.id)}
+                          aria-label={`Remove ${item.name}`}
+                          className="w-7 h-7 rounded-full border border-black/10 text-gray-400 hover:text-[#1A1A1A] hover:border-black/20 transition-colors flex items-center justify-center"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
                     </div>
                   ))}
                   <div className="pt-4 border-t border-black/10 space-y-3">
                     <div className="flex items-center justify-between text-xs font-semibold tracking-[0.2em] uppercase text-gray-500">
                       <span>Subtotal</span>
-                      <span className="text-sm font-semibold text-[#1A1A1A]">₹{cartTotal}</span>
+                      <span className="text-sm font-semibold text-[#1A1A1A]">{rupee}{cartTotal}</span>
                     </div>
                     <div className="flex items-center justify-between text-xs font-semibold tracking-[0.2em] uppercase text-gray-500">
                       <span>Delivery</span>
                       <span className="text-sm font-semibold text-[#1A1A1A]">
-                        {deliveryFee === 0 ? "Free" : `₹${deliveryFee}`}
+                        {deliveryFee === 0 ? "Free" : `${rupee}${deliveryFee}`}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs font-semibold tracking-[0.2em] uppercase text-gray-500">
                       <span>Total</span>
-                      <span className="text-2xl font-semibold text-[#1A1A1A]">₹{grandTotal}</span>
+                      <span className="text-2xl font-semibold text-[#1A1A1A]">{rupee}{grandTotal}</span>
                     </div>
                     <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
-                      {deliveryFee === 0 ? "Free delivery unlocked" : "Free delivery over ₹250"}
+                      {deliveryFee === 0 ? "Free delivery unlocked" : `Free delivery over ${rupee}250`}
                     </div>
                   </div>
                 </div>
@@ -313,7 +382,7 @@ export default function Checkout({ onBack, cart, onClearCart }: CheckoutProps) {
                         <option key={zone} value={zone} disabled={zone === "Select Area"}>{zone}</option>
                       ))}
                     </select>
-                    <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400">▾</span>
+                    <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400">{"\u25BE"}</span>
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -375,7 +444,7 @@ export default function Checkout({ onBack, cart, onClearCart }: CheckoutProps) {
               <div className="w-16 h-16 bg-[#1A1A1A] rounded-full flex items-center justify-center mb-8 relative z-10">
                 <QrCode className="text-white" size={24} strokeWidth={1.5} />
               </div>
-              <h3 className="text-3xl font-serif text-[#1A1A1A] mb-3 relative z-10">Scan to Pay ₹{grandTotal}</h3>
+              <h3 className="text-3xl font-serif text-[#1A1A1A] mb-3 relative z-10">Scan to Pay {rupee}{grandTotal}</h3>
               <p className="text-sm font-light text-gray-500 mb-10 relative z-10">Use any UPI app (GPay, PhonePe, Paytm)</p>
               
               <div className="w-56 h-56 bg-white border border-black/10 flex items-center justify-center mb-10 relative z-10 p-4">
