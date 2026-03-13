@@ -237,8 +237,8 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
       alert("Please allow location access for accurate delivery.");
       return;
     }
-    if (locationAccuracy && locationAccuracy > 10) {
-      alert(`Location accuracy is ${locationAccuracy}m. Please retry for 10m accuracy.`);
+    if (locationAccuracy && locationAccuracy > 500) {
+      alert(`Location accuracy is ${locationAccuracy}m. Please retry for 500m accuracy.`);
       return;
     }
     if (formData.name && formData.phone && formData.address && formData.area && formData.area !== "Select Area") {

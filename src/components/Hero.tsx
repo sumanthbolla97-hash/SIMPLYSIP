@@ -67,8 +67,8 @@ export default function Hero({ onSubscribe }: HeroProps) {
           >
             <div className="aspect-[4/5] sm:aspect-[3/4] rounded-[2.2rem] sm:rounded-[2.8rem] overflow-hidden bg-white shadow-[0_50px_120px_-70px_rgba(0,0,0,0.45)] border border-black/5">
               <img 
-                src="/images/hero-lineup.png" 
-                alt="Glass bottle lineup with moisture droplets" 
+                src="/images/hero.jpeg" 
+                alt="Glass bottled. Moisture sealed." 
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
               />

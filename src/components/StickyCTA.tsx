@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Milk } from 'lucide-react';
 
 interface StickyCTAProps {
   onSubscribePlan: (plan: "weekly" | "monthly") => void;
   selectedPlan: "weekly" | "monthly";
   onPlanChange: (plan: "weekly" | "monthly") => void;
+  onCheckout: () => void;
+  cartCount: number;
 }
 
-export default function StickyCTA({ onSubscribePlan, selectedPlan, onPlanChange }: StickyCTAProps) {
+export default function StickyCTA({ onSubscribePlan, selectedPlan, onPlanChange, onCheckout, cartCount }: StickyCTAProps) {
   const [isVisible, setIsVisible] = useState(false);
   const plan = selectedPlan;
   const rupee = "\u20B9";
+  const showCart = isVisible && cartCount > 0;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -28,7 +32,22 @@ export default function StickyCTA({ onSubscribePlan, selectedPlan, onPlanChange 
   return (
     <AnimatePresence>
       {isVisible && (
-        <motion.div 
+        <>
+          {showCart && (
+            <motion.button
+            type="button"
+            onClick={onCheckout}
+            initial={{ y: 16, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 16, opacity: 0 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed right-4 sm:right-6 bottom-[calc(1rem+86px)] sm:bottom-[calc(1.5rem+86px)] z-[60] flex items-center gap-2 rounded-full bg-[#1D1C1A] text-white px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] shadow-[0_20px_50px_-30px_rgba(0,0,0,0.5)] hover:bg-black transition-colors"
+            >
+              <Milk size={14} />
+              Cart {cartCount}
+            </motion.button>
+          )}
+          <motion.div 
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
@@ -73,6 +92,7 @@ export default function StickyCTA({ onSubscribePlan, selectedPlan, onPlanChange 
             </div>
           </div>
         </motion.div>
+        </>
       )}
     </AnimatePresence>
   );

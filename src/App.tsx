@@ -106,14 +106,10 @@ export default function App() {
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           >
             <Header 
-              onSubscribe={() => setIsCheckoutOpen(true)} 
-              onCheckout={() => setIsCheckoutOpen(true)}
               onAuth={() => {
                 setAuthMode("login");
                 setIsAuthOpen(true);
               }}
-              cartCount={cartCount}
-              cartTotal={combinedTotal}
             />
             <Hero onSubscribe={() => setIsPlanOpen(true)} />
             <Menu 
@@ -133,6 +129,8 @@ export default function App() {
               onSubscribePlan={handleSubscription}
               selectedPlan={selectedPlan}
               onPlanChange={setSelectedPlan}
+              onCheckout={() => setIsCheckoutOpen(true)}
+              cartCount={cartCount}
             />
 
             {isPlanOpen && (

@@ -1,15 +1,10 @@
 import { motion } from 'motion/react';
-import { Milk } from 'lucide-react';
 
 interface HeaderProps {
-  onSubscribe: () => void;
-  onCheckout: () => void;
   onAuth: () => void;
-  cartCount: number;
-  cartTotal: number;
 }
 
-export default function Header({ onSubscribe, onCheckout, onAuth, cartCount, cartTotal }: HeaderProps) {
+export default function Header({ onAuth }: HeaderProps) {
   return (
     <motion.header 
       initial={{ opacity: 0, y: -20 }}
@@ -36,15 +31,6 @@ export default function Header({ onSubscribe, onCheckout, onAuth, cartCount, car
         >
           Login
         </button>
-        <div className="flex flex-col items-end gap-1">
-          <button 
-            onClick={onCheckout}
-            className="flex items-center gap-2 text-[10px] sm:text-[11px] font-semibold tracking-[0.2em] text-white bg-[#1D1C1A] hover:bg-black transition-colors rounded-full px-4 sm:px-5 py-2.5 uppercase"
-          >
-            <Milk size={16} />
-            Cart {cartCount}
-          </button>
-        </div>
       </div>
     </motion.header>
   );
