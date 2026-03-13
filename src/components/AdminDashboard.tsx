@@ -388,14 +388,21 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
     if (!selectedOrder) return;
     setIsSavingOrder(true);
     try {
-      await update(ref(db, `orders/${selectedOrder.id}`), {
+      const payload = {
         orderStatus: orderForm.orderStatus,
         paymentStatus: orderForm.paymentStatus,
         deliverySlot: orderForm.deliverySlot,
         assignedRider: orderForm.assignedRider,
         notes: orderForm.notes,
         updatedAt: Date.now()
-      });
+      };
+      await update(ref(db, `orders/${selectedOrder.id}`), payload);
+      setOrders((prev) =>
+        prev.map((order) => (order.id === selectedOrder.id ? { ...order, ...payload } : order))
+      );
+      setLocalMockOrders((prev) =>
+        prev.map((order) => (order.id === selectedOrder.id ? { ...order, ...payload } : order))
+      );
       setSelectedOrder(null);
     } catch (err) {
       console.error("Failed to update order:", err);
@@ -468,9 +475,9 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
           <ArrowLeft size={16} /> Back
         </button>
 
-        <div className="flex items-center justify-between mb-10">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-10">
           <h1 className="text-4xl md:text-6xl font-bold tracking-tighter text-[#1D1D1F]">Admin Dashboard.</h1>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {(["A", "B", "C", "D"] as const).map((key) => (
               <button
                 key={key}
@@ -588,7 +595,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
 
         {selectedOrder && (
           <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center px-4">
-            <div className="w-full max-w-xl bg-white rounded-[2rem] p-8 border border-black/5 shadow-[0_50px_120px_-80px_rgba(0,0,0,0.5)]">
+            <div className="w-full max-w-xl bg-white rounded-[2rem] p-8 border border-black/5 shadow-[0_50px_120px_-80px_rgba(0,0,0,0.5)] max-h-[85vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.3em] text-gray-400 mb-1">Order Details</div>
@@ -690,7 +697,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                 </div>
               </div>
 
-              <div className="mt-6 flex items-center gap-3">
+              <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sticky bottom-0 bg-white pt-4 border-t border-black/10">
                 <button
                   onClick={saveOrderUpdates}
                   disabled={isSavingOrder}
