@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { get, onValue, push, ref, remove, set, update } from 'firebase/database';
@@ -35,6 +35,22 @@ const mergeOrders = (dbOrders: any[], mockOrders: any[]) => {
     merged.push(order);
   });
   return merged.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+};
+
+const normalizeTimestamp = (value: any) => {
+  if (!value) return null;
+  if (typeof value === "number") {
+    return value < 1e12 ? value * 1000 : value;
+  }
+  if (typeof value === "string") {
+    const asNum = Number(value);
+    if (Number.isFinite(asNum)) {
+      return asNum < 1e12 ? asNum * 1000 : asNum;
+    }
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+  return null;
 };
 
 export default function AdminDashboard({ onBack }: { onBack: () => void }) {
@@ -74,6 +90,10 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
   const rupee = "\u20B9";
   const bullet = "\u2022";
   const displayOrders = mergeOrders(orders, localMockOrders);
+  const now = new Date();
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+  const [selectedDay, setSelectedDay] = useState(now.getDate());
 
   // Form state
   const [name, setName] = useState('');
@@ -123,7 +143,11 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
 
     const ordersRef = ref(db, "orders");
     const unsubscribeOrders = onValue(ordersRef, (snapshot) => {
-      const data = snapshotToArray(snapshot).sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0));
+      const data = snapshotToArray(snapshot).sort((a: any, b: any) => {
+        const aTime = normalizeTimestamp(a.createdAt ?? a.updatedAt) || 0;
+        const bTime = normalizeTimestamp(b.createdAt ?? b.updatedAt) || 0;
+        return bTime - aTime;
+      });
       setOrders(data);
       const ids = new Set(data.map((order: any) => order.id).filter(Boolean));
       setLocalMockOrders((prev) => prev.filter((order) => !ids.has(order.id)));
@@ -179,8 +203,12 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
           get(ref(db, "users"))
         ]);
         const menuData = snapshotToArray(menuSnap);
-        const ordersData = snapshotToArray(ordersSnap).sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0));
-        const usersVal = usersSnap.val();
+      const ordersData = snapshotToArray(ordersSnap).sort((a: any, b: any) => {
+        const aTime = normalizeTimestamp(a.createdAt ?? a.updatedAt) || 0;
+        const bTime = normalizeTimestamp(b.createdAt ?? b.updatedAt) || 0;
+        return bTime - aTime;
+      });
+      const usersVal = usersSnap.val();
         setItems(menuData.length > 0 ? menuData : seedMenu.map((item, index) => ({ id: `seed-${index + 1}`, ...item })));
         setOrders(ordersData);
         setTotalUsers(usersVal ? Object.keys(usersVal).length : 0);
@@ -373,6 +401,50 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
     }
   }, [orders, localMockOrders, userCountError]);
 
+  const dailyStats = useMemo(() => {
+    const map: Record<string, { count: number; revenue: number }> = {};
+    displayOrders.forEach((order: any) => {
+      const timestamp = normalizeTimestamp(order.createdAt ?? order.updatedAt);
+      if (!timestamp) return;
+      const date = new Date(timestamp);
+      if (Number.isNaN(date.getTime())) return;
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      if (!map[key]) {
+        map[key] = { count: 0, revenue: 0 };
+      }
+      map[key].count += 1;
+      const total = Number(order.total ?? 0);
+      map[key].revenue += Number.isFinite(total) ? total : 0;
+    });
+    return map;
+  }, [displayOrders]);
+
+  const yearOptions = useMemo(() => {
+    const years = new Set<number>();
+    Object.keys(dailyStats).forEach((key) => {
+      const year = Number(key.slice(0, 4));
+      if (Number.isFinite(year)) years.add(year);
+    });
+    if (years.size === 0) years.add(now.getFullYear());
+    return Array.from(years).sort((a, b) => a - b);
+  }, [dailyStats, now]);
+
+  const daysInSelectedMonth = useMemo(() => {
+    return new Date(selectedYear, selectedMonth + 1, 0).getDate();
+  }, [selectedYear, selectedMonth]);
+
+  useEffect(() => {
+    if (selectedDay > daysInSelectedMonth) {
+      setSelectedDay(daysInSelectedMonth);
+    }
+  }, [daysInSelectedMonth, selectedDay]);
+
+  const selectedDateKey = useMemo(() => {
+    return `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
+  }, [selectedYear, selectedMonth, selectedDay]);
+
+  const selectedStats = dailyStats[selectedDateKey] || { count: 0, revenue: 0 };
+
   useEffect(() => {
     if (!selectedOrder) return;
     setOrderForm({
@@ -540,6 +612,73 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
               {status}
             </button>
           ))}
+        </div>
+
+        <div className="mb-14">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <h2 className="text-xl font-bold tracking-tight text-[#1D1D1F]">Order Calendar</h2>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
+              Select Date
+            </div>
+          </div>
+
+          <div className="bg-white border border-black/5 rounded-3xl p-6 shadow-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              <div className="space-y-2">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400">Day</div>
+                <select
+                  value={selectedDay}
+                  onChange={(e) => setSelectedDay(Number(e.target.value))}
+                  className="w-full rounded-2xl border border-black/10 bg-white px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors"
+                >
+                  {Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1).map((day) => (
+                    <option key={day} value={day}>
+                      {day}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400">Month</div>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                  className="w-full rounded-2xl border border-black/10 bg-white px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors"
+                >
+                  {[
+                    "January","February","March","April","May","June","July","August","September","October","November","December"
+                  ].map((label, index) => (
+                    <option key={label} value={index}>{label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400">Year</div>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  className="w-full rounded-2xl border border-black/10 bg-white px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors"
+                >
+                  {yearOptions.map((year) => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="rounded-2xl border border-black/5 p-4">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2">Orders</div>
+                <div className="text-2xl font-semibold text-[#1D1D1F]">{selectedStats.count}</div>
+              </div>
+              <div className="rounded-2xl border border-black/5 p-4">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-2">Revenue</div>
+                <div className="text-2xl font-semibold text-[#1D1D1F]">
+                  {rupee}{Math.round(selectedStats.revenue)}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="mb-14">
