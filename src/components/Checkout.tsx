@@ -274,41 +274,48 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
       .join("\n");
     const accuracyText = locationAccuracy ? ` (accuracy ${locationAccuracy}m)` : "";
     const message = `Hi Simply Sip, I placed an order.\n\nItems:\n${itemsText}\n\nSubtotal: ${rupee}${cartTotal}\nDelivery: ${rupee}${deliveryFee}\nTotal: ${rupee}${grandTotal}\n\nName: ${formData.name}\nAddress: ${formData.address}\nArea: ${formData.area}\nLocation: ${location}${accuracyText}\nPayment Done.`;
-    let createdOrderId: string | null = null;
-    try {
-      const docRef = await addDoc(collection(db, "orders"), {
-        userId: user?.uid || null,
-        userEmail: user?.email || null,
-        items: cartItems.map((item) => ({
-          id: item.id,
-          name: item.name,
-          qty: cart[item.id] ?? 0,
-          price: getOffer(item)
-        })),
-        subtotal: cartTotal,
-        deliveryFee,
-        total: grandTotal,
-        address: {
-          name: formData.name,
-          phone: formData.phone,
-          area: formData.area,
-          address: formData.address,
-          addressType: addressType
-        },
-        location,
-        locationAccuracy,
-        status: "pending",
-        createdAt: serverTimestamp()
-      });
-      createdOrderId = docRef.id;
-    } catch (err) {
-      console.error("Failed to save order:", err);
-    }
-    setOrderId(createdOrderId);
+    setOrderId(null);
     setStep(3);
+    void addDoc(collection(db, "orders"), {
+      userId: user?.uid || null,
+      userEmail: user?.email || null,
+      items: cartItems.map((item) => ({
+        id: item.id,
+        name: item.name,
+        qty: cart[item.id] ?? 0,
+        price: getOffer(item)
+      })),
+      subtotal: cartTotal,
+      deliveryFee,
+      total: grandTotal,
+      address: {
+        name: formData.name,
+        phone: formData.phone,
+        area: formData.area,
+        address: formData.address,
+        addressType: addressType
+      },
+      location,
+      locationAccuracy,
+      status: "pending",
+      createdAt: serverTimestamp()
+    })
+      .then((docRef) => setOrderId(docRef.id))
+      .catch((err) => console.error("Failed to save order:", err));
+    onClearCart();
+  };
+
+  const handleOrderViaWhatsapp = () => {
+    const itemsText = cartItems
+      .map((item) => {
+        const desc = item.desc ? ` (${item.desc})` : "";
+        return `${item.name}${desc} x${cart[item.id]} - ${rupee}${getOffer(item)} each`;
+      })
+      .join("\n");
+    const accuracyText = locationAccuracy ? ` (accuracy ${locationAccuracy}m)` : "";
+    const message = `Hi Simply Sip, I placed an order.\n\nItems:\n${itemsText}\n\nSubtotal: ${rupee}${cartTotal}\nDelivery: ${rupee}${deliveryFee}\nTotal: ${rupee}${grandTotal}\n\nName: ${formData.name}\nAddress: ${formData.address}\nArea: ${formData.area}\nLocation: ${location}${accuracyText}\nOrder via WhatsApp.`;
     const whatsappUrl = `https://wa.me/919999999999?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
-    onClearCart();
   };
 
   return (
@@ -575,7 +582,13 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
               </div>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
+              <button 
+                onClick={handleOrderViaWhatsapp}
+                className="w-full py-4 border border-black/15 text-[#1A1A1A] font-semibold tracking-[0.1em] hover:border-black/30 transition-all duration-500 uppercase text-[11px] rounded-full"
+              >
+                Order via WhatsApp
+              </button>
               <button 
                 onClick={handlePaymentDone}
                 className="w-full py-5 bg-[#1A1A1A] text-white font-semibold tracking-[0.1em] hover:bg-black transition-all duration-500 uppercase text-[11px] shadow-xl shadow-black/5 hover:shadow-black/15 hover:-translate-y-0.5"
@@ -583,7 +596,7 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
                 I have made the payment
               </button>
               <p className="text-[10px] text-center text-gray-400 font-semibold tracking-[0.1em] uppercase">
-                You will be redirected to WhatsApp to confirm.
+                Payment confirmation creates your order.
               </p>
             </div>
           </div>

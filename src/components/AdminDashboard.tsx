@@ -17,6 +17,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
   const [userCountError, setUserCountError] = useState(false);
   const [orders, setOrders] = useState<any[]>([]);
   const [toastOrder, setToastOrder] = useState<any | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const hasLoadedOrders = useRef(false);
   const hasAutoSeeded = useRef(false);
   const [menuError, setMenuError] = useState<string | null>(null);
@@ -168,12 +169,16 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
     <div className="min-h-screen bg-[#F5F5F7] p-6 md:p-12">
       <div className="max-w-6xl mx-auto">
         {toastOrder && (
-          <div className="fixed top-6 right-6 z-[90] bg-white border border-black/10 rounded-2xl shadow-[0_30px_80px_-50px_rgba(0,0,0,0.45)] px-5 py-4">
+          <button
+            type="button"
+            onClick={() => setSelectedOrder(toastOrder)}
+            className="fixed top-6 right-6 z-[90] bg-white border border-black/10 rounded-2xl shadow-[0_30px_80px_-50px_rgba(0,0,0,0.45)] px-5 py-4 text-left hover:border-black/20 transition-colors"
+          >
             <div className="text-[10px] uppercase tracking-[0.3em] text-gray-400 mb-1">New Order</div>
             <div className="text-sm font-semibold text-[#1D1D1F]">
               {toastOrder?.address?.name || "Customer"} • ₹{toastOrder?.total ?? "-"}
             </div>
-          </div>
+          </button>
         )}
         <button 
           onClick={onBack}
@@ -212,7 +217,12 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
           ) : (
             <div className="space-y-3">
               {orders.slice(0, 6).map((order) => (
-                <div key={order.id} className="bg-white p-5 rounded-2xl border border-black/5 flex items-center justify-between">
+                <button
+                  key={order.id}
+                  type="button"
+                  onClick={() => setSelectedOrder(order)}
+                  className="bg-white p-5 rounded-2xl border border-black/5 flex items-center justify-between text-left hover:border-black/20 transition-colors"
+                >
                   <div>
                     <div className="text-xs uppercase tracking-[0.2em] text-gray-400 mb-1">
                       {order.status || "pending"}
@@ -227,11 +237,60 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                   <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
                     {order.id}
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           )}
         </div>
+
+        {selectedOrder && (
+          <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center px-4">
+            <div className="w-full max-w-xl bg-white rounded-[2rem] p-8 border border-black/5 shadow-[0_50px_120px_-80px_rgba(0,0,0,0.5)]">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.3em] text-gray-400 mb-1">Order Details</div>
+                  <div className="text-lg font-semibold text-[#1D1D1F]">
+                    {selectedOrder.address?.name || "Customer"}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedOrder(null)}
+                  className="text-xs uppercase tracking-[0.3em] text-[#6F6A63]"
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 text-sm text-[#1D1D1F]">
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-1">Phone</div>
+                  <div>{selectedOrder.address?.phone || "-"}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-1">Area</div>
+                  <div>{selectedOrder.address?.area || "-"}</div>
+                </div>
+                <div className="sm:col-span-2">
+                  <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-1">Address</div>
+                  <div>{selectedOrder.address?.address || "-"}</div>
+                </div>
+              </div>
+
+              <div className="border-t border-black/10 pt-4 space-y-3">
+                {(selectedOrder.items || []).map((item: any, idx: number) => (
+                  <div key={`${item.id}-${idx}`} className="flex items-center justify-between text-sm">
+                    <div>{item.name} × {item.qty}</div>
+                    <div>₹{item.price}</div>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between text-sm font-semibold text-[#1D1D1F] pt-2 border-t border-black/10">
+                  <span>Total Paid</span>
+                  <span>₹{selectedOrder.total ?? "-"}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
           {/* Add Form */}

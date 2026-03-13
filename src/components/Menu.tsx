@@ -74,8 +74,10 @@ function IngredientTicker({ desc }: { desc?: string }) {
 }
 
 export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: MenuProps) {
-  const [menuItems, setMenuItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [menuItems, setMenuItems] = useState<any[]>(
+    seedMenu.map((item, index) => ({ id: `${index + 1}`, ...item }))
+  );
+  const [loading, setLoading] = useState(false);
   const rupee = "\u20B9";
   useEffect(() => {
     const loadMenu = async () => {
@@ -84,12 +86,9 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
         const data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         if (data.length > 0) {
           setMenuItems(data);
-        } else {
-          setMenuItems(seedMenu.map((item, index) => ({ id: `${index + 1}`, ...item })));
         }
       } catch (err) {
         console.error(err);
-        setMenuItems(seedMenu.map((item, index) => ({ id: `${index + 1}`, ...item })));
       } finally {
         setLoading(false);
       }
