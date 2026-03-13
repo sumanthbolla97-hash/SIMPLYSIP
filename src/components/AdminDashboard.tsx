@@ -532,7 +532,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
           <button
             type="button"
             onClick={() => setSelectedOrder(toastOrder)}
-            className="fixed top-6 right-6 z-[90] bg-white border border-black/10 rounded-2xl shadow-[0_30px_80px_-50px_rgba(0,0,0,0.45)] px-5 py-4 text-left hover:border-black/20 transition-colors"
+            className="fixed top-4 right-4 z-[90] bg-white border border-black/10 rounded-2xl shadow-[0_30px_80px_-50px_rgba(0,0,0,0.45)] px-5 py-4 text-left hover:border-black/20 transition-colors"
           >
             <div className="text-[10px] uppercase tracking-[0.3em] text-gray-400 mb-1">New Order</div>
             <div className="text-sm font-semibold text-[#1D1D1F]">
@@ -542,12 +542,12 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
         )}
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-colors mb-12"
+          className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-colors mb-8 sm:mb-12"
         >
           <ArrowLeft size={16} /> Back
         </button>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-10">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
           <h1 className="text-4xl md:text-6xl font-bold tracking-tighter text-[#1D1D1F]">Admin Dashboard.</h1>
           <div className="flex flex-wrap items-center gap-2">
             {(["A", "B", "C", "D"] as const).map((key) => (
@@ -564,13 +564,6 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                 {activeMockKeys.has(key) ? "..." : key}
               </button>
             ))}
-            <button
-              onClick={refreshAll}
-              disabled={isRefreshing}
-              className="px-5 py-3 rounded-full border border-black/10 text-[10px] font-semibold tracking-[0.2em] uppercase text-[#1D1C1A] hover:border-black/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {isRefreshing ? "Refreshing..." : "Refresh"}
-            </button>
           </div>
           {testOrderError && (
             <div className="mt-2 text-xs text-red-500 font-medium">
@@ -579,7 +572,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
           <div className="bg-white rounded-3xl border border-black/5 p-6 shadow-sm">
             <div className="text-[10px] uppercase tracking-[0.3em] text-gray-400 mb-2">Total Users</div>
             <div className="text-3xl font-semibold text-[#1D1D1F]">
@@ -697,7 +690,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                 .map((order) => (
                   <div
                     key={order.id}
-                    className="bg-white p-5 rounded-2xl border border-black/5 flex items-center justify-between gap-4 text-left hover:border-black/20 transition-colors"
+                    className="bg-white p-4 sm:p-5 rounded-2xl border border-black/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-left hover:border-black/20 transition-colors"
                   >
                     <button
                       type="button"
@@ -722,7 +715,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                     <button
                       type="button"
                       onClick={() => handleDeleteOrder(order.id)}
-                      className="px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-red-600 border border-red-200 rounded-full hover:border-red-300"
+                      className="w-full sm:w-auto px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-red-600 border border-red-200 rounded-full hover:border-red-300"
                     >
                       Delete
                     </button>
@@ -734,7 +727,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
 
         {selectedOrder && (
           <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center px-4">
-            <div className="w-full max-w-xl bg-white rounded-[2rem] p-8 border border-black/5 shadow-[0_50px_120px_-80px_rgba(0,0,0,0.5)] max-h-[85vh] overflow-y-auto">
+            <div className="w-full sm:max-w-xl bg-white rounded-[2rem] p-6 sm:p-8 border border-black/5 shadow-[0_50px_120px_-80px_rgba(0,0,0,0.5)] max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.3em] text-gray-400 mb-1">Order Details</div>
@@ -855,9 +848,9 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16">
           <div className="lg:col-span-1">
-            <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-black/5 sticky top-6">
+            <div className="bg-white p-6 sm:p-8 rounded-[2rem] shadow-sm border border-black/5 lg:sticky lg:top-6">
               <h2 className="text-2xl font-bold tracking-tight mb-8 text-[#1D1D1F]">Add New Juice</h2>
               <form onSubmit={handleAdd} className="space-y-6">
                 <div>
@@ -910,7 +903,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                 <button
                   onClick={handleSeedMenu}
                   disabled={isSeeding}
-                  className="px-5 py-3 rounded-full border border-black/10 text-[10px] font-semibold tracking-[0.2em] uppercase text-[#1D1C1A] hover:border-black/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="px-4 py-2.5 sm:px-5 sm:py-3 rounded-full border border-black/10 text-[9px] sm:text-[10px] font-semibold tracking-[0.2em] uppercase text-[#1D1C1A] hover:border-black/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {isSeeding ? "Seeding..." : "Seed Default Menu"}
                 </button>
