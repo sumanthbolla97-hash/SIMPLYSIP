@@ -217,7 +217,7 @@ export default function App() {
                           <div className="text-lg font-semibold text-[#1D1C1A] font-display">₹699 / week</div>
                           <div className="text-xs text-[#6F6A63]">7 cold-pressed juices (200 ml each)</div>
                         </div>
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-[#6F6A63] border border-black/10 rounded-full px-3 py-1">
+                        <span className="pointer-events-none inline-flex items-center justify-center min-w-[140px] px-5 sm:px-6 py-2.5 bg-[#1D1C1A] text-white rounded-full font-semibold tracking-[0.2em] uppercase text-[10px]">
                           Subscribe Now
                         </span>
                       </div>
@@ -233,7 +233,7 @@ export default function App() {
                           <div className="text-lg font-semibold text-[#1D1C1A] font-display">₹2599 / month</div>
                           <div className="text-xs text-[#6F6A63]">One cold-pressed juice a day for the month</div>
                         </div>
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-[#6F6A63] border border-black/10 rounded-full px-3 py-1">
+                        <span className="pointer-events-none inline-flex items-center justify-center min-w-[140px] px-5 sm:px-6 py-2.5 bg-[#1D1C1A] text-white rounded-full font-semibold tracking-[0.2em] uppercase text-[10px]">
                           Subscribe Now
                         </span>
                       </div>
