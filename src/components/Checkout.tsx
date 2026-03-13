@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, QrCode, Trash2 } from 'lucide-react';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { push, ref, set } from 'firebase/database';
 import { db } from '../firebaseConfig';
 
 interface CheckoutProps {
@@ -70,11 +70,11 @@ function IngredientTicker({ desc }: { desc?: string }) {
   if (!desc) return null;
 
   const parts = desc
-    .split(/\u2022|•/)
+    .split(/\u2022/)
     .map((part) => part.trim())
     .filter(Boolean);
 
-  if (parts.length <= 1 && !desc.match(/\u2022|•/)) {
+  if (parts.length <= 1 && !desc.match(/\u2022/)) {
     return (
       <p className="text-[11px] text-[#6F6A63] mt-1 line-clamp-2">
         {desc}
@@ -114,6 +114,20 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
   const [addressType, setAddressType] = useState(user?.addressType || 'Home');
   const [isAddressLocked, setIsAddressLocked] = useState(false);
   const rupee = "\u20B9";
+
+  useEffect(() => {
+    if (!user) return;
+    const nextForm = {
+      name: user?.displayName || user?.name || '',
+      phone: user?.phoneNumber || user?.phone || '',
+      address: user?.address || '',
+      area: user?.area || ''
+    };
+    setFormData(nextForm);
+    setAddressType(user?.addressType || 'Home');
+    const hasSavedAddress = Boolean(nextForm.name && nextForm.phone && nextForm.address && nextForm.area);
+    setIsAddressLocked(hasSavedAddress);
+  }, [user]);
 
   useEffect(() => {
     fetch('/api/menu')
@@ -231,6 +245,7 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
       return;
     }
     onAddressUpdate({
+      name: formData.name,
       address: formData.address,
       area: formData.area,
       addressType: addressType,
@@ -266,6 +281,7 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
   };
 
   const handlePaymentDone = async () => {
+    const subscriptionType = cart.sub_weekly ? "weekly" : cart.sub_monthly ? "monthly" : null;
     const itemsText = cartItems
       .map((item) => {
         const desc = item.desc ? ` (${item.desc})` : "";
@@ -276,7 +292,8 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
     const message = `Hi Simply Sip, I placed an order.\n\nItems:\n${itemsText}\n\nSubtotal: ${rupee}${cartTotal}\nDelivery: ${rupee}${deliveryFee}\nTotal: ${rupee}${grandTotal}\n\nName: ${formData.name}\nAddress: ${formData.address}\nArea: ${formData.area}\nLocation: ${location}${accuracyText}\nPayment Done.`;
     setOrderId(null);
     setStep(3);
-    void addDoc(collection(db, "orders"), {
+    const newRef = push(ref(db, "orders"));
+    void set(newRef, {
       userId: user?.uid || null,
       userEmail: user?.email || null,
       items: cartItems.map((item) => ({
@@ -288,6 +305,12 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
       subtotal: cartTotal,
       deliveryFee,
       total: grandTotal,
+      subscriptionType,
+      paymentStatus: "paid",
+      orderStatus: "pending",
+      deliverySlot: "",
+      assignedRider: "",
+      notes: "",
       address: {
         name: formData.name,
         phone: formData.phone,
@@ -298,9 +321,9 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
       location,
       locationAccuracy,
       status: "pending",
-      createdAt: serverTimestamp()
+      createdAt: Date.now()
     })
-      .then((docRef) => setOrderId(docRef.id))
+      .then(() => setOrderId(newRef.key))
       .catch((err) => console.error("Failed to save order:", err));
     onClearCart();
   };
@@ -314,7 +337,7 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
       .join("\n");
     const accuracyText = locationAccuracy ? ` (accuracy ${locationAccuracy}m)` : "";
     const message = `Hi Simply Sip, I placed an order.\n\nItems:\n${itemsText}\n\nSubtotal: ${rupee}${cartTotal}\nDelivery: ${rupee}${deliveryFee}\nTotal: ${rupee}${grandTotal}\n\nName: ${formData.name}\nAddress: ${formData.address}\nArea: ${formData.area}\nLocation: ${location}${accuracyText}\nOrder via WhatsApp.`;
-    const whatsappUrl = `https://wa.me/919999999999?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `https://wa.me/917799934943?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 

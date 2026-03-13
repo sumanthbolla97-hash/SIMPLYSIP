@@ -1,5 +1,5 @@
 import { signInWithPopup } from "firebase/auth";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { ref, update } from "firebase/database";
 import { auth, db, googleProvider } from "../firebaseConfig";
 
 interface GoogleLoginButtonProps {
@@ -16,17 +16,13 @@ const GoogleLoginButton = ({ onLoginSuccess }: GoogleLoginButtonProps) => {
       // This gives you a Google Access Token. You can use it to access the Google API.
       // const credential = GoogleAuthProvider.credentialFromResult(result);
       // const token = credential.accessToken;
-      await setDoc(
-        doc(db, "users", user.uid),
-        {
-          uid: user.uid,
-          name: user.displayName || "",
-          email: user.email || "",
-          provider: user.providerData?.[0]?.providerId || "google",
-          lastLoginAt: serverTimestamp()
-        },
-        { merge: true }
-      );
+      await update(ref(db, `users/${user.uid}`), {
+        uid: user.uid,
+        name: user.displayName || "",
+        email: user.email || "",
+        provider: user.providerData?.[0]?.providerId || "google",
+        lastLoginAt: Date.now()
+      });
       onLoginSuccess(user);
     } catch (error) {
       console.error("Authentication error:", error);

@@ -11,7 +11,7 @@ import AdminDashboard from './components/AdminDashboard';
 import FinalCTA from './components/FinalCTA';
 import AuthModal from './components/AuthModal';
 import { isSignInWithEmailLink, onAuthStateChanged, signInWithEmailLink, signOut } from 'firebase/auth';
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { get, onValue, ref, update } from 'firebase/database';
 import { auth, db } from './firebaseConfig';
 
 export default function App() {
@@ -26,6 +26,7 @@ export default function App() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [user, setUser] = useState<any | null>(null);
+  const [userProfile, setUserProfile] = useState<any | null>(null);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL;
   const [isCartHydrated, setIsCartHydrated] = useState(false);
@@ -86,6 +87,7 @@ export default function App() {
       } else {
         setIsAdminOpen(false);
         setIsCartHydrated(false);
+        setUserProfile(null);
       }
     });
   }, []);
@@ -117,16 +119,16 @@ export default function App() {
         }
       })();
       try {
-        const snap = await getDoc(doc(db, "users", user.uid));
-        const data = snap.exists() ? (snap.data() as any) : null;
+        const snap = await get(ref(db, `users/${user.uid}`));
+        const data = snap.exists() ? (snap.val() as any) : null;
         if (data?.cart && Object.keys(data.cart).length > 0) {
           setCart(data.cart);
         } else if (localCart && Object.keys(localCart).length > 0) {
           setCart(localCart);
-          await setDoc(doc(db, "users", user.uid), { cart: localCart }, { merge: true });
+          await update(ref(db, `users/${user.uid}`), { cart: localCart });
         }
       } catch (err) {
-        console.warn("Failed to hydrate cart from Firestore:", err);
+        console.warn("Failed to hydrate cart from database:", err);
         if (localCart && Object.keys(localCart).length > 0) {
           setCart(localCart);
         }
@@ -138,13 +140,23 @@ export default function App() {
   }, [user]);
 
   useEffect(() => {
+    if (!user) return;
+    const userRef = ref(db, `users/${user.uid}`);
+    return onValue(
+      userRef,
+      (snapshot) => {
+        setUserProfile(snapshot.val() || null);
+      },
+      (err) => {
+        console.warn("Failed to load user profile:", err);
+      }
+    );
+  }, [user]);
+
+  useEffect(() => {
     if (!user || !isCartHydrated) return;
     const handle = window.setTimeout(() => {
-      setDoc(
-        doc(db, "users", user.uid),
-        { cart, cartUpdatedAt: serverTimestamp() },
-        { merge: true }
-      ).catch((err) => {
+      update(ref(db, `users/${user.uid}`), { cart, cartUpdatedAt: Date.now() }).catch((err) => {
         console.warn("Failed to persist cart:", err);
       });
     }, 500);
@@ -173,14 +185,9 @@ export default function App() {
 
   const handleAddressUpdate = async (addressData: any) => {
     if (!user) return;
-    await setDoc(
-      doc(db, "users", user.uid),
-      {
-        ...addressData,
-        updatedAt: serverTimestamp()
-      },
-      { merge: true }
-    );
+    const payload = { ...addressData, updatedAt: Date.now() };
+    await update(ref(db, `users/${user.uid}`), payload);
+    setUserProfile((prev: any) => ({ ...(prev || {}), ...payload }));
   };
 
   return (
@@ -206,7 +213,7 @@ export default function App() {
           >
             <Checkout 
               onBack={() => setIsCheckoutOpen(false)} 
-              user={user}
+              user={user ? { ...user, ...(userProfile || {}) } : null}
               cart={cart}
               onClearCart={() => setCart({})}
               onRemoveItem={handleRemoveItem}
@@ -286,7 +293,7 @@ export default function App() {
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="text-sm uppercase tracking-[0.3em] text-[#6F6A63] mb-1">Weekly Plan</div>
-                          <div className="text-lg font-semibold text-[#1D1C1A] font-display">₹699 / week</div>
+                          <div className="text-lg font-semibold text-[#1D1C1A] font-display">{"\u20B9"}699 / week</div>
                           <div className="text-xs text-[#6F6A63]">7 cold-pressed juices (200 ml each)</div>
                         </div>
                         <span className="pointer-events-none inline-flex items-center justify-center min-w-[140px] px-5 sm:px-6 py-2.5 bg-[#1D1C1A] text-white rounded-full font-semibold tracking-[0.2em] uppercase text-[10px]">
@@ -302,7 +309,7 @@ export default function App() {
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="text-sm uppercase tracking-[0.3em] text-[#6F6A63] mb-1">Monthly Plan</div>
-                          <div className="text-lg font-semibold text-[#1D1C1A] font-display">₹2599 / month</div>
+                          <div className="text-lg font-semibold text-[#1D1C1A] font-display">{"\u20B9"}2599 / month</div>
                           <div className="text-xs text-[#6F6A63]">One cold-pressed juice a day for the month</div>
                         </div>
                         <span className="pointer-events-none inline-flex items-center justify-center min-w-[140px] px-5 sm:px-6 py-2.5 bg-[#1D1C1A] text-white rounded-full font-semibold tracking-[0.2em] uppercase text-[10px]">

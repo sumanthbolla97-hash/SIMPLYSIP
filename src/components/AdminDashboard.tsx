@@ -1,9 +1,41 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { Trash2, ArrowLeft } from 'lucide-react';
-import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
+import { ArrowLeft, Trash2 } from 'lucide-react';
+import { get, onValue, push, ref, remove, set, update } from 'firebase/database';
 import { db } from '../firebaseConfig';
 import { seedMenu } from '../data/seedMenu';
+
+type OrderFilter = "all" | "pending" | "paid" | "delivered" | "cancelled";
+
+type OrderFormState = {
+  orderStatus: string;
+  paymentStatus: string;
+  deliverySlot: string;
+  assignedRider: string;
+  notes: string;
+};
+
+const snapshotToArray = (snapshot: any) => {
+  const val = snapshot.val();
+  if (!val) return [];
+  return Object.entries(val).map(([id, data]) => ({ id, ...(data as any) }));
+};
+
+const mergeOrders = (dbOrders: any[], mockOrders: any[]) => {
+  const seen = new Set<string>();
+  const merged: any[] = [];
+  dbOrders.forEach((order) => {
+    if (!order?.id || seen.has(order.id)) return;
+    seen.add(order.id);
+    merged.push(order);
+  });
+  mockOrders.forEach((order) => {
+    if (!order?.id || seen.has(order.id)) return;
+    seen.add(order.id);
+    merged.push(order);
+  });
+  return merged.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+};
 
 export default function AdminDashboard({ onBack }: { onBack: () => void }) {
   const [items, setItems] = useState<any[]>(
@@ -16,13 +48,33 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
   const [subscribers, setSubscribers] = useState(0);
   const [userCountError, setUserCountError] = useState(false);
   const [orders, setOrders] = useState<any[]>([]);
+  const [localMockOrders, setLocalMockOrders] = useState<any[]>([]);
   const [toastOrder, setToastOrder] = useState<any | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [orderFilter, setOrderFilter] = useState<OrderFilter>("all");
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [orderForm, setOrderForm] = useState<OrderFormState>({
+    orderStatus: "pending",
+    paymentStatus: "unpaid",
+    deliverySlot: "",
+    assignedRider: "",
+    notes: ""
+  });
   const hasLoadedOrders = useRef(false);
+  const seenOrderIds = useRef<Set<string>>(new Set());
   const hasAutoSeeded = useRef(false);
   const [menuError, setMenuError] = useState<string | null>(null);
   const [isSeeding, setIsSeeding] = useState(false);
-  
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const refreshTimeoutRef = useRef<number | null>(null);
+  const refreshIntervalRef = useRef<number | null>(null);
+  const [activeMockKeys, setActiveMockKeys] = useState<Set<"A" | "B" | "C" | "D">>(new Set());
+  const mockUnlockRef = useRef<Record<string, number>>({});
+  const [testOrderError, setTestOrderError] = useState<string | null>(null);
+  const rupee = "\u20B9";
+  const bullet = "\u2022";
+  const displayOrders = mergeOrders(orders, localMockOrders);
+
   // Form state
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
@@ -36,12 +88,10 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
     setIsSeeding(true);
     try {
       await Promise.all(
-        seedMenu.map((item) =>
-          addDoc(collection(db, "menu"), {
-            ...item,
-            createdAt: serverTimestamp()
-          })
-        )
+        seedMenu.map((item) => {
+          const newRef = push(ref(db, "menu"));
+          return set(newRef, { ...item, createdAt: Date.now() });
+        })
       );
     } catch (err) {
       console.error("Failed to seed menu:", err);
@@ -51,11 +101,11 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
   };
 
   useEffect(() => {
-    const menuQuery = query(collection(db, "menu"));
-    const unsubscribeMenu = onSnapshot(
-      menuQuery,
+    const menuRef = ref(db, "menu");
+    const unsubscribeMenu = onValue(
+      menuRef,
       (snapshot) => {
-        const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        const data = snapshotToArray(snapshot);
         setItems(data.length > 0 ? data : seedMenu.map((item, index) => ({ id: `seed-${index + 1}`, ...item })));
         setMenuError(null);
         setLoading(false);
@@ -66,78 +116,299 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
       },
       (err) => {
         console.error("Failed to load menu:", err);
-        setMenuError("Menu failed to load. Check Firestore rules.");
+        setMenuError("Menu failed to load. Check database rules.");
         setLoading(false);
       }
     );
 
-    fetchUserCount();
-
-    const ordersQuery = query(collection(db, "orders"), orderBy("createdAt", "desc"));
-    const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const ordersRef = ref(db, "orders");
+    const unsubscribeOrders = onValue(ordersRef, (snapshot) => {
+      const data = snapshotToArray(snapshot).sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0));
       setOrders(data);
+      const ids = new Set(data.map((order: any) => order.id).filter(Boolean));
+      setLocalMockOrders((prev) => prev.filter((order) => !ids.has(order.id)));
       if (hasLoadedOrders.current) {
-        const added = snapshot.docChanges().find((change) => change.type === "added");
-        if (added) {
-          setToastOrder({ id: added.doc.id, ...added.doc.data() });
+        const newOrder = data.find((order: any) => !seenOrderIds.current.has(order.id));
+        if (newOrder) {
+          setToastOrder(newOrder);
           window.setTimeout(() => setToastOrder(null), 5000);
         }
       }
+      seenOrderIds.current = new Set(data.map((o: any) => o.id));
       hasLoadedOrders.current = true;
     });
+
+    const usersRef = ref(db, "users");
+    const unsubscribeUsers = onValue(
+      usersRef,
+      (snapshot) => {
+        const val = snapshot.val();
+        setTotalUsers(val ? Object.keys(val).length : 0);
+        setUserCountError(false);
+        setStatsLoading(false);
+      },
+      (err) => {
+        console.error("Failed to load users:", err);
+        setUserCountError(true);
+        setStatsLoading(false);
+      }
+    );
+
     return () => {
       unsubscribeMenu();
-      unsubscribe();
+      unsubscribeOrders();
+      unsubscribeUsers();
     };
   }, []);
 
-  const fetchItems = async () => {
-    try {
-      const res = await fetch('/api/menu');
-      const data = await res.json();
-      setItems(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+  const refreshAll = async () => {
+    if (refreshTimeoutRef.current) {
+      window.clearTimeout(refreshTimeoutRef.current);
+      refreshTimeoutRef.current = null;
     }
+    if (refreshIntervalRef.current) {
+      window.clearInterval(refreshIntervalRef.current);
+      refreshIntervalRef.current = null;
+    }
+    setIsRefreshing(true);
+    const refreshNow = async () => {
+      try {
+        const [menuSnap, ordersSnap, usersSnap] = await Promise.all([
+          get(ref(db, "menu")),
+          get(ref(db, "orders")),
+          get(ref(db, "users"))
+        ]);
+        const menuData = snapshotToArray(menuSnap);
+        const ordersData = snapshotToArray(ordersSnap).sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0));
+        const usersVal = usersSnap.val();
+        setItems(menuData.length > 0 ? menuData : seedMenu.map((item, index) => ({ id: `seed-${index + 1}`, ...item })));
+        setOrders(ordersData);
+        setTotalUsers(usersVal ? Object.keys(usersVal).length : 0);
+      } catch (err) {
+        console.error("Manual refresh failed:", err);
+      }
+    };
+
+    await refreshNow();
+    refreshIntervalRef.current = window.setInterval(refreshNow, 1000);
+    refreshTimeoutRef.current = window.setTimeout(() => {
+      if (refreshIntervalRef.current) {
+        window.clearInterval(refreshIntervalRef.current);
+        refreshIntervalRef.current = null;
+      }
+      setIsRefreshing(false);
+      refreshTimeoutRef.current = null;
+    }, 3000);
   };
 
-  const fetchUserCount = async () => {
+  const createMockOrder = async (key: "A" | "B" | "C" | "D") => {
+    const lockToken = Date.now();
+    mockUnlockRef.current[key] = lockToken;
+    setActiveMockKeys((prev) => {
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+    setTestOrderError(null);
     try {
-      const usersSnap = await getDocs(collection(db, "users"));
-      setTotalUsers(usersSnap.size);
+      const baseTime = Date.now();
+      const mockOrders: Record<"A" | "B" | "C" | "D", any> = {
+        A: {
+          userId: "test-user-1",
+          userEmail: "test1@example.com",
+          items: [
+            { id: "1", name: "Hulk Greens", qty: 1, price: 129 },
+            { id: "9", name: "Golden Sunrise", qty: 2, price: 119 }
+          ],
+          subtotal: 367,
+          deliveryFee: 0,
+          total: 367,
+          paymentStatus: "unpaid",
+          orderStatus: "pending",
+          deliverySlot: "Today 6-8 PM",
+          assignedRider: "Ravi",
+          notes: "Mock order for testing",
+          address: {
+            name: "Test Customer One",
+            phone: "9999999991",
+            area: "Sainikpuri",
+            address: "H.No 12-34, Street 5",
+            addressType: "Home"
+          },
+          location: "Lat 17.438, Lng 78.498",
+          locationAccuracy: 25,
+          createdAt: baseTime
+        },
+        B: {
+          userId: "test-user-2",
+          userEmail: "test2@example.com",
+          items: [
+            { id: "3", name: "ABC", qty: 1, price: 119 },
+            { id: "12", name: "Velvet Vine", qty: 1, price: 129 }
+          ],
+          subtotal: 248,
+          deliveryFee: 30,
+          total: 278,
+          paymentStatus: "paid",
+          orderStatus: "paid",
+          deliverySlot: "Tomorrow 7-9 AM",
+          assignedRider: "Kiran",
+          notes: "Mock order for testing",
+          address: {
+            name: "Test Customer Two",
+            phone: "9999999992",
+            area: "Kompally",
+            address: "Plot 45, Green View",
+            addressType: "Office"
+          },
+          location: "Lat 17.505, Lng 78.503",
+          locationAccuracy: 40,
+          createdAt: baseTime + 200
+        },
+        C: {
+          userId: "test-user-3",
+          userEmail: "test3@example.com",
+          items: [
+            { id: "sub_weekly", name: "Weekly Subscription", qty: 1, price: 699 }
+          ],
+          subtotal: 699,
+          deliveryFee: 0,
+          total: 699,
+          subscriptionType: "weekly",
+          paymentStatus: "paid",
+          orderStatus: "delivered",
+          deliverySlot: "Today 6-7 PM",
+          assignedRider: "Zoya",
+          notes: "Mock order for testing",
+          address: {
+            name: "Test Customer Three",
+            phone: "9999999993",
+            area: "Marredpally",
+            address: "12/7, Palm Street",
+            addressType: "Home"
+          },
+          location: "Lat 17.445, Lng 78.508",
+          locationAccuracy: 18,
+          createdAt: baseTime + 400
+        },
+        D: {
+          userId: "test-user-4",
+          userEmail: "test4@example.com",
+          items: [
+            { id: "7", name: "Coco Fresh", qty: 2, price: 129 },
+            { id: "15", name: "Garden Joy", qty: 1, price: 109 }
+          ],
+          subtotal: 367,
+          deliveryFee: 0,
+          total: 367,
+          paymentStatus: "unpaid",
+          orderStatus: "cancelled",
+          deliverySlot: "Today 8-10 PM",
+          assignedRider: "Manoj",
+          notes: "Mock order for testing",
+          address: {
+            name: "Test Customer Four",
+            phone: "9999999994",
+            area: "Alwal",
+            address: "45/A, Lake Road",
+            addressType: "Other"
+          },
+          location: "Lat 17.494, Lng 78.532",
+          locationAccuracy: 32,
+          createdAt: baseTime + 600
+        }
+      };
+      const payload = mockOrders[key];
+      const newRef = push(ref(db, "orders"));
+      setLocalMockOrders((prev) => {
+        const next = [{ id: newRef.key, ...payload }, ...prev];
+        const seen = new Set<string>();
+        return next.filter((order) => {
+          if (!order || !order.id) return false;
+          if (seen.has(order.id)) return false;
+          seen.add(order.id);
+          return true;
+        });
+      });
+      await set(newRef, payload);
     } catch (err) {
-      console.error("Failed to load admin stats:", err);
-      setUserCountError(true);
+      console.error("Failed to create test order:", err);
+      setTestOrderError(err instanceof Error ? err.message : "Failed to create test order.");
     } finally {
-      setStatsLoading(false);
+      window.setTimeout(() => {
+        if (mockUnlockRef.current[key] === lockToken) {
+          setActiveMockKeys((prev) => {
+            const next = new Set(prev);
+            next.delete(key);
+            return next;
+          });
+        }
+      }, 400);
     }
   };
 
   useEffect(() => {
     setUpcomingOrders(
-      orders.filter((order: any) => (order.status || "pending") === "pending").length
+      displayOrders.filter((order: any) => {
+        const status = order.orderStatus || order.status || "pending";
+        return status !== "delivered" && status !== "cancelled";
+      }).length
     );
-    setSubscribers(
-      orders.filter((order: any) =>
-        Array.isArray(order.items) &&
-        order.items.some((item: any) => item.id === "sub_weekly" || item.id === "sub_monthly")
-      ).length
-    );
+    const subscriberIds = new Set<string>();
+    displayOrders.forEach((order: any) => {
+      const isPaid = (order.paymentStatus || "") === "paid";
+      const hasSubscription =
+        Boolean(order.subscriptionType) ||
+        (Array.isArray(order.items) && order.items.some((item: any) => item.id === "sub_weekly" || item.id === "sub_monthly"));
+      const isCancelled = (order.orderStatus || order.status || "") === "cancelled";
+      if (isPaid && hasSubscription && !isCancelled) {
+        const identity = order.userId || order.userEmail || order.id;
+        subscriberIds.add(identity);
+      }
+    });
+    setSubscribers(subscriberIds.size);
     if (userCountError) {
-      const uniqueUsers = new Set(
-        orders.map((order: any) => order.userId).filter(Boolean)
-      );
+      const uniqueUsers = new Set(displayOrders.map((order: any) => order.userId).filter(Boolean));
       setTotalUsers(uniqueUsers.size);
     }
-  }, [orders, userCountError]);
+  }, [orders, localMockOrders, userCountError]);
+
+  useEffect(() => {
+    if (!selectedOrder) return;
+    setOrderForm({
+      orderStatus: selectedOrder.orderStatus || selectedOrder.status || "pending",
+      paymentStatus: selectedOrder.paymentStatus || "unpaid",
+      deliverySlot: selectedOrder.deliverySlot || "",
+      assignedRider: selectedOrder.assignedRider || "",
+      notes: selectedOrder.notes || ""
+    });
+  }, [selectedOrder]);
+
+  const saveOrderUpdates = async () => {
+    if (!selectedOrder) return;
+    setIsSavingOrder(true);
+    try {
+      await update(ref(db, `orders/${selectedOrder.id}`), {
+        orderStatus: orderForm.orderStatus,
+        paymentStatus: orderForm.paymentStatus,
+        deliverySlot: orderForm.deliverySlot,
+        assignedRider: orderForm.assignedRider,
+        notes: orderForm.notes,
+        updatedAt: Date.now()
+      });
+      setSelectedOrder(null);
+    } catch (err) {
+      console.error("Failed to update order:", err);
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, "menu"), {
+      const newRef = push(ref(db, "menu"));
+      await set(newRef, {
         name,
         desc,
         image,
@@ -145,7 +416,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
         mrp: Number(mrp),
         offerPrice: Number(offerPrice),
         price: Number(offerPrice),
-        createdAt: serverTimestamp()
+        createdAt: Date.now()
       });
       setName('');
       setDesc('');
@@ -157,11 +428,21 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteMenu = async (id: string) => {
     try {
-      await deleteDoc(doc(db, "menu", id));
+      await remove(ref(db, `menu/${id}`));
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleDeleteOrder = async (id: string) => {
+    try {
+      await remove(ref(db, `orders/${id}`));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLocalMockOrders((prev) => prev.filter((order) => order.id !== id));
     }
   };
 
@@ -176,69 +457,131 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
           >
             <div className="text-[10px] uppercase tracking-[0.3em] text-gray-400 mb-1">New Order</div>
             <div className="text-sm font-semibold text-[#1D1D1F]">
-              {toastOrder?.address?.name || "Customer"} • ₹{toastOrder?.total ?? "-"}
+              {toastOrder?.address?.name || "Customer"} {bullet} {rupee}{toastOrder?.total ?? "-"}
             </div>
           </button>
         )}
-        <button 
+        <button
           onClick={onBack}
           className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-colors mb-12"
         >
           <ArrowLeft size={16} /> Back
         </button>
 
-        <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-10 text-[#1D1D1F]">Admin Dashboard.</h1>
+        <div className="flex items-center justify-between mb-10">
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tighter text-[#1D1D1F]">Admin Dashboard.</h1>
+          <div className="flex items-center gap-2">
+            {(["A", "B", "C", "D"] as const).map((key) => (
+              <button
+                key={key}
+                onClick={() => createMockOrder(key)}
+                disabled={activeMockKeys.has(key)}
+                className={`w-10 h-10 rounded-full border text-[11px] font-semibold tracking-[0.15em] uppercase transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
+                  activeMockKeys.has(key)
+                    ? "border-[#1D1C1A] bg-[#1D1C1A] text-white"
+                    : "border-black/10 text-[#1D1C1A] hover:border-black/20"
+                }`}
+              >
+                {activeMockKeys.has(key) ? "..." : key}
+              </button>
+            ))}
+            <button
+              onClick={refreshAll}
+              disabled={isRefreshing}
+              className="px-5 py-3 rounded-full border border-black/10 text-[10px] font-semibold tracking-[0.2em] uppercase text-[#1D1C1A] hover:border-black/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isRefreshing ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
+          {testOrderError && (
+            <div className="mt-2 text-xs text-red-500 font-medium">
+              {testOrderError}
+            </div>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-12">
           <div className="bg-white rounded-3xl border border-black/5 p-6 shadow-sm">
             <div className="text-[10px] uppercase tracking-[0.3em] text-gray-400 mb-2">Total Users</div>
             <div className="text-3xl font-semibold text-[#1D1D1F]">
-              {statsLoading ? "…" : totalUsers}
+              {statsLoading ? "..." : totalUsers}
             </div>
           </div>
           <div className="bg-white rounded-3xl border border-black/5 p-6 shadow-sm">
             <div className="text-[10px] uppercase tracking-[0.3em] text-gray-400 mb-2">Upcoming Orders</div>
             <div className="text-3xl font-semibold text-[#1D1D1F]">
-              {statsLoading ? "…" : upcomingOrders}
+              {statsLoading ? "..." : upcomingOrders}
             </div>
           </div>
           <div className="bg-white rounded-3xl border border-black/5 p-6 shadow-sm">
             <div className="text-[10px] uppercase tracking-[0.3em] text-gray-400 mb-2">Subscribers</div>
             <div className="text-3xl font-semibold text-[#1D1D1F]">
-              {statsLoading ? "…" : subscribers}
+              {statsLoading ? "..." : subscribers}
             </div>
           </div>
         </div>
 
+        <div className="mb-6 flex flex-wrap items-center gap-2">
+          {(["all", "pending", "paid", "delivered", "cancelled"] as const).map((status) => (
+            <button
+              key={status}
+              onClick={() => setOrderFilter(status)}
+              className={`px-4 py-2 rounded-full text-[10px] font-semibold tracking-[0.2em] uppercase border ${
+                orderFilter === status ? "bg-[#1D1C1A] text-white border-[#1D1C1A]" : "border-black/10 text-[#1D1C1A]"
+              }`}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+
         <div className="mb-14">
           <h2 className="text-2xl font-bold tracking-tight mb-6 text-[#1D1D1F]">Live Orders</h2>
-          {orders.length === 0 ? (
+          {displayOrders.length === 0 ? (
             <p className="text-gray-500 font-medium">No orders yet.</p>
           ) : (
             <div className="space-y-3">
-              {orders.slice(0, 6).map((order) => (
-                <button
-                  key={order.id}
-                  type="button"
-                  onClick={() => setSelectedOrder(order)}
-                  className="bg-white p-5 rounded-2xl border border-black/5 flex items-center justify-between text-left hover:border-black/20 transition-colors"
-                >
-                  <div>
-                    <div className="text-xs uppercase tracking-[0.2em] text-gray-400 mb-1">
-                      {order.status || "pending"}
-                    </div>
-                    <div className="text-sm font-semibold text-[#1D1D1F]">
-                      {order.address?.name || "Customer"} • ₹{order.total ?? "-"}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {order.address?.area || "Area"} • {order.address?.phone || "Phone"}
-                    </div>
+              {displayOrders
+                .filter((order) => {
+                  if (orderFilter === "all") return true;
+                  if (orderFilter === "paid") return (order.paymentStatus || "") === "paid";
+                  return (order.orderStatus || order.status || "pending") === orderFilter;
+                })
+                .slice(0, 10)
+                .map((order) => (
+                  <div
+                    key={order.id}
+                    className="bg-white p-5 rounded-2xl border border-black/5 flex items-center justify-between gap-4 text-left hover:border-black/20 transition-colors"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setSelectedOrder(order)}
+                      className="flex-1 text-left"
+                    >
+                      <div>
+                        <div className="text-xs uppercase tracking-[0.2em] text-gray-400 mb-1">
+                          {(order.orderStatus || order.status || "pending")} {bullet} {order.paymentStatus || "unpaid"}
+                        </div>
+                        <div className="text-sm font-semibold text-[#1D1D1F]">
+                          {order.address?.name || "Customer"} {bullet} {rupee}{order.total ?? "-"}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {order.address?.area || "Area"} {bullet} {order.address?.phone || "Phone"}
+                        </div>
+                      </div>
+                      <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
+                        {order.id}
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteOrder(order.id)}
+                      className="px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-red-600 border border-red-200 rounded-full hover:border-red-300"
+                    >
+                      Delete
+                    </button>
                   </div>
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
-                    {order.id}
-                  </div>
-                </button>
-              ))}
+                ))}
             </div>
           )}
         </div>
@@ -252,6 +595,9 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                   <div className="text-lg font-semibold text-[#1D1D1F]">
                     {selectedOrder.address?.name || "Customer"}
                   </div>
+                  {selectedOrder.userEmail && (
+                    <div className="text-xs text-gray-500">{selectedOrder.userEmail}</div>
+                  )}
                 </div>
                 <button
                   onClick={() => setSelectedOrder(null)}
@@ -276,24 +622,94 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 text-sm">
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-1">Order Status</div>
+                  <select
+                    value={orderForm.orderStatus}
+                    onChange={(e) => setOrderForm((prev) => ({ ...prev, orderStatus: e.target.value }))}
+                    className="w-full rounded-2xl border border-black/10 bg-white/80 px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="paid">Paid</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-1">Payment Status</div>
+                  <select
+                    value={orderForm.paymentStatus}
+                    onChange={(e) => setOrderForm((prev) => ({ ...prev, paymentStatus: e.target.value }))}
+                    className="w-full rounded-2xl border border-black/10 bg-white/80 px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors"
+                  >
+                    <option value="unpaid">Unpaid</option>
+                    <option value="paid">Paid</option>
+                    <option value="refunded">Refunded</option>
+                  </select>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-1">Delivery Slot</div>
+                  <input
+                    value={orderForm.deliverySlot}
+                    onChange={(e) => setOrderForm((prev) => ({ ...prev, deliverySlot: e.target.value }))}
+                    placeholder="e.g. Today 6-8 PM"
+                    className="w-full rounded-2xl border border-black/10 bg-white/80 px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors"
+                  />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-1">Assigned Rider</div>
+                  <input
+                    value={orderForm.assignedRider}
+                    onChange={(e) => setOrderForm((prev) => ({ ...prev, assignedRider: e.target.value }))}
+                    placeholder="Rider name"
+                    className="w-full rounded-2xl border border-black/10 bg-white/80 px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400 mb-1">Notes</div>
+                  <textarea
+                    value={orderForm.notes}
+                    onChange={(e) => setOrderForm((prev) => ({ ...prev, notes: e.target.value }))}
+                    placeholder="Add internal notes"
+                    className="w-full rounded-2xl border border-black/10 bg-white/80 px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors resize-none min-h-[80px]"
+                  />
+                </div>
+              </div>
+
               <div className="border-t border-black/10 pt-4 space-y-3">
                 {(selectedOrder.items || []).map((item: any, idx: number) => (
                   <div key={`${item.id}-${idx}`} className="flex items-center justify-between text-sm">
-                    <div>{item.name} × {item.qty}</div>
-                    <div>₹{item.price}</div>
+                    <div>{item.name} x {item.qty}</div>
+                    <div>{rupee}{item.price}</div>
                   </div>
                 ))}
                 <div className="flex items-center justify-between text-sm font-semibold text-[#1D1D1F] pt-2 border-t border-black/10">
                   <span>Total Paid</span>
-                  <span>₹{selectedOrder.total ?? "-"}</span>
+                  <span>{rupee}{selectedOrder.total ?? "-"}</span>
                 </div>
+              </div>
+
+              <div className="mt-6 flex items-center gap-3">
+                <button
+                  onClick={saveOrderUpdates}
+                  disabled={isSavingOrder}
+                  className="flex-1 py-3 bg-[#1D1C1A] text-white font-semibold tracking-[0.1em] uppercase text-[11px] rounded-full hover:bg-black transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isSavingOrder ? "Saving..." : "Save Updates"}
+                </button>
+                <button
+                  onClick={() => setSelectedOrder(null)}
+                  className="flex-1 py-3 border border-black/10 text-[#1D1C1A] font-semibold tracking-[0.1em] uppercase text-[11px] rounded-full hover:border-black/20 transition-colors"
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
-          {/* Add Form */}
           <div className="lg:col-span-1">
             <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-black/5 sticky top-6">
               <h2 className="text-2xl font-bold tracking-tight mb-8 text-[#1D1D1F]">Add New Juice</h2>
@@ -318,11 +734,11 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                   <textarea required value={desc} onChange={e => setDesc(e.target.value)} placeholder="Orange, Lemon, Ginger" className="w-full border-b border-black/10 py-3 text-sm focus:outline-none focus:border-black transition-colors bg-transparent min-h-[80px] resize-none" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold tracking-wide text-gray-500 mb-2 uppercase">MRP (₹)</label>
+                  <label className="block text-xs font-semibold tracking-wide text-gray-500 mb-2 uppercase">MRP ({rupee})</label>
                   <input required type="number" value={mrp} onChange={e => setMrp(e.target.value)} className="w-full border-b border-black/10 py-3 text-sm focus:outline-none focus:border-black transition-colors bg-transparent" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold tracking-wide text-gray-500 mb-2 uppercase">Offer Price (₹)</label>
+                  <label className="block text-xs font-semibold tracking-wide text-gray-500 mb-2 uppercase">Offer Price ({rupee})</label>
                   <input required type="number" value={offerPrice} onChange={e => setOfferPrice(e.target.value)} className="w-full border-b border-black/10 py-3 text-sm focus:outline-none focus:border-black transition-colors bg-transparent" />
                 </div>
                 <div>
@@ -336,7 +752,6 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
             </div>
           </div>
 
-          {/* Item List */}
           <div className="lg:col-span-2 space-y-4">
             <h2 className="text-2xl font-bold tracking-tight mb-8 text-[#1D1D1F]">Current Menu</h2>
             {loading ? (
@@ -356,7 +771,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
               </div>
             ) : (
               items.map((item) => (
-                <motion.div 
+                <motion.div
                   key={item.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -368,16 +783,16 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                   <div className="flex-1">
                     <div className="flex items-center gap-4 mb-2">
                       <span className="text-xs font-semibold tracking-wide uppercase text-gray-400">{item.category || "Menu"}</span>
-                      <span className="text-sm font-bold text-[#1D1D1F]">₹{item.offerPrice ?? item.price}</span>
+                      <span className="text-sm font-bold text-[#1D1D1F]">{rupee}{item.offerPrice ?? item.price}</span>
                       {item.mrp && (
-                        <span className="text-xs text-gray-400 line-through">₹{item.mrp}</span>
+                        <span className="text-xs text-gray-400 line-through">{rupee}{item.mrp}</span>
                       )}
                     </div>
                     <h3 className="text-xl font-bold tracking-tight text-[#1D1D1F] mb-1">{item.name}</h3>
                     <p className="text-sm text-gray-500 font-light truncate max-w-md">{item.desc}</p>
                   </div>
-                  <button 
-                    onClick={() => handleDelete(item.id)}
+                  <button
+                    onClick={() => handleDeleteMenu(item.id)}
                     className="p-4 text-gray-400 hover:text-red-500 transition-colors bg-gray-50 hover:bg-red-50 rounded-full"
                   >
                     <Trash2 className="w-5 h-5" strokeWidth={1.5} />

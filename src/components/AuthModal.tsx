@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { createUserWithEmailAndPassword, sendSignInLinkToEmail, signInWithEmailAndPassword, signInWithPopup, updateProfile } from 'firebase/auth';
-import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { ref, update } from 'firebase/database';
 import { auth, db, googleProvider } from '../firebaseConfig';
 
 interface AuthModalProps {
@@ -21,18 +21,17 @@ export default function AuthModal({ isOpen, mode, onClose, onModeChange }: AuthM
   const [linkSent, setLinkSent] = useState(false);
 
   const upsertUserDoc = async (user: any, extra: Record<string, unknown> = {}) => {
-    await setDoc(
-      doc(db, "users", user.uid),
+    await update(
+      ref(db, `users/${user.uid}`),
       {
         uid: user.uid,
         name: user.displayName || fullName || "",
         phone: phone || user.phoneNumber || "",
         email: user.email || email || "",
         provider: user.providerData?.[0]?.providerId || "password",
-        lastLoginAt: serverTimestamp(),
+        lastLoginAt: Date.now(),
         ...extra
-      },
-      { merge: true }
+      }
     );
   };
 
@@ -46,7 +45,7 @@ export default function AuthModal({ isOpen, mode, onClose, onModeChange }: AuthM
         if (fullName) {
           await updateProfile(cred.user, { displayName: fullName });
         }
-        await upsertUserDoc(cred.user, { createdAt: serverTimestamp() });
+        await upsertUserDoc(cred.user, { createdAt: Date.now() });
       } else {
         const cred = await signInWithEmailAndPassword(auth, email, password);
         await upsertUserDoc(cred.user);
@@ -220,7 +219,7 @@ export default function AuthModal({ isOpen, mode, onClose, onModeChange }: AuthM
           </button>
           {linkSent && (
             <div className="mt-3 text-[11px] text-[#6F6A63] text-center">
-              Link sent. Check your email to finish sign‑in.
+              Link sent. Check your email to finish sign-in.
             </div>
           )}
 

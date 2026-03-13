@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction, CSSProperties } from 'react';
 import { motion } from 'motion/react';
-import { collection, getDocs } from 'firebase/firestore';
+import { get, onValue, ref } from 'firebase/database';
 import { db } from '../firebaseConfig';
 import { seedMenu } from '../data/seedMenu';
 
@@ -41,7 +41,7 @@ function IngredientTicker({ desc }: { desc?: string }) {
 
   if (!desc) return null;
   const parts = desc
-    .split(/\u2022|•/)
+    .split(/\u2022/)
     .map((part) => part.trim())
     .filter(Boolean);
   if (parts.length === 0) return null;
@@ -82,8 +82,9 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
   useEffect(() => {
     const loadMenu = async () => {
       try {
-        const snap = await getDocs(collection(db, "menu"));
-        const data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        const snap = await get(ref(db, "menu"));
+        const val = snap.val();
+        const data = val ? Object.entries(val).map(([id, item]) => ({ id, ...(item as any) })) : [];
         if (data.length > 0) {
           setMenuItems(data);
         }
@@ -94,6 +95,23 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
       }
     };
     loadMenu();
+
+    const menuRef = ref(db, "menu");
+    const unsubscribe = onValue(
+      menuRef,
+      (snapshot) => {
+        const val = snapshot.val();
+        const data = val ? Object.entries(val).map(([id, item]) => ({ id, ...(item as any) })) : [];
+        if (data.length > 0) {
+          setMenuItems(data);
+        }
+      },
+      (err) => {
+        console.error("Menu realtime update failed:", err);
+      }
+    );
+
+    return () => unsubscribe();
   }, []);
 
   const roundUpTo9 = (value: number) => {
@@ -105,7 +123,7 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
   const renderIngredients = (desc?: string) => {
     if (!desc) return null;
     const parts = desc
-      .split(/\u2022|•/)
+      .split(/\u2022/)
       .map((part) => part.trim())
       .filter(Boolean);
     if (parts.length === 0) return null;

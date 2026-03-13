@@ -88,8 +88,8 @@ export default function Subscription({ onSubscribe, selectedPlan, onPlanChange }
               <h3 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1D1C1A] font-display mb-2">{activePlan.title}</h3>
               <p className="text-sm text-[#6F6A63] font-light mb-6">{activePlan.count}</p>
               <div className="flex items-baseline justify-center gap-3 mb-4">
-                <span className="text-sm text-[#A7A29C] line-through font-medium">₹{activePlan.mrp}</span>
-                <span className="text-3xl sm:text-4xl font-semibold text-[#1D1C1A]">₹{activePlan.price}</span>
+                <span className="text-sm text-[#A7A29C] line-through font-medium">{"\u20B9"}{activePlan.mrp}</span>
+                <span className="text-3xl sm:text-4xl font-semibold text-[#1D1C1A]">{"\u20B9"}{activePlan.price}</span>
                 <span className="text-[11px] uppercase tracking-[0.2em] text-[#6F6A63]">{activePlan.cadence}</span>
               </div>
               {activePlan.perBottle && (
