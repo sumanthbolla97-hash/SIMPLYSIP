@@ -1,10 +1,12 @@
 import { motion } from 'motion/react';
 
 interface HeaderProps {
+  user: any | null;
   onAuth: () => void;
+  onLogout: () => void;
 }
 
-export default function Header({ onAuth }: HeaderProps) {
+export default function Header({ user, onAuth, onLogout }: HeaderProps) {
   return (
     <motion.header 
       initial={{ opacity: 0, y: -20 }}
@@ -25,12 +27,26 @@ export default function Header({ onAuth }: HeaderProps) {
         <a href="#menu" className="text-[10px] sm:text-[11px] font-medium tracking-[0.2em] text-[#6F6A63] hover:text-black transition-colors uppercase">
           Menu
         </a>
-        <button
-          onClick={onAuth}
-          className="text-[10px] sm:text-[11px] font-medium tracking-[0.2em] text-[#6F6A63] hover:text-black transition-colors uppercase"
-        >
-          Login
-        </button>
+        {user ? (
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] sm:text-[11px] font-medium tracking-[0.2em] text-[#6F6A63] uppercase">
+              {user.displayName ? `Hi, ${user.displayName}` : "Signed In"}
+            </span>
+            <button
+              onClick={onLogout}
+              className="text-[10px] sm:text-[11px] font-medium tracking-[0.2em] text-[#6F6A63] hover:text-black transition-colors uppercase"
+            >
+              Logout
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={onAuth}
+            className="text-[10px] sm:text-[11px] font-medium tracking-[0.2em] text-[#6F6A63] hover:text-black transition-colors uppercase"
+          >
+            Login
+          </button>
+        )}
       </div>
     </motion.header>
   );

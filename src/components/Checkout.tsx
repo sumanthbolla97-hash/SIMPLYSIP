@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, QrCode, Trash2 } from 'lucide-react';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
 
 interface CheckoutProps {
-  user: any;
+  user?: any;
   onBack: () => void;
   cart: Record<string, number>;
   onClearCart: () => void;
   onRemoveItem: (id: string) => void;
   onIncrementItem: (id: string) => void;
   onDecrementItem: (id: string) => void;
-  onAddressUpdate: (addressData: any) => void;
+  onAddressUpdate?: (addressData: any) => void;
 }
 
 const SECUNDERABAD_ZONES = [
@@ -103,8 +105,8 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
   const [isLocating, setIsLocating] = useState(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const [formData, setFormData] = useState({
-    name: user?.name || '',
-    phone: user?.phone || '',
+    name: user?.displayName || user?.name || '',
+    phone: user?.phoneNumber || user?.phone || '',
     address: user?.address || '',
     area: user?.area || ''
   });
@@ -218,14 +220,18 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
   };
 
   const handleSaveAddress = () => {
+    if (!onAddressUpdate) {
+      alert("Please login to save your address.");
+      return;
+    }
     onAddressUpdate({
-        address: formData.address,
-        area: formData.area,
-        addressType: addressType,
-        phone: formData.phone
+      address: formData.address,
+      area: formData.area,
+      addressType: addressType,
+      phone: formData.phone
     });
     alert("Address saved!");
-}
+  };
 
   const handleProceedToPayment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -248,7 +254,7 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
     }
   };
 
-  const handlePaymentDone = () => {
+  const handlePaymentDone = async () => {
     const itemsText = cartItems
       .map((item) => {
         const desc = item.desc ? ` (${item.desc})` : "";
@@ -257,6 +263,33 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
       .join("\n");
     const accuracyText = locationAccuracy ? ` (accuracy ${locationAccuracy}m)` : "";
     const message = `Hi Simply Sip, I placed an order.\n\nItems:\n${itemsText}\n\nSubtotal: ${rupee}${cartTotal}\nDelivery: ${rupee}${deliveryFee}\nTotal: ${rupee}${grandTotal}\n\nName: ${formData.name}\nAddress: ${formData.address}\nArea: ${formData.area}\nLocation: ${location}${accuracyText}\nPayment Done.`;
+    try {
+      await addDoc(collection(db, "orders"), {
+        userId: user?.uid || null,
+        items: cartItems.map((item) => ({
+          id: item.id,
+          name: item.name,
+          qty: cart[item.id] ?? 0,
+          price: getOffer(item)
+        })),
+        subtotal: cartTotal,
+        deliveryFee,
+        total: grandTotal,
+        address: {
+          name: formData.name,
+          phone: formData.phone,
+          area: formData.area,
+          address: formData.address,
+          addressType: addressType
+        },
+        location,
+        locationAccuracy,
+        status: "pending",
+        createdAt: serverTimestamp()
+      });
+    } catch (err) {
+      console.error("Failed to save order:", err);
+    }
     const whatsappUrl = `https://wa.me/919999999999?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
     onClearCart();
