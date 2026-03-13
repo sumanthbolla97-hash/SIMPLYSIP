@@ -1,12 +1,15 @@
 import { motion } from 'motion/react';
+import { LayoutDashboard } from 'lucide-react';
 
 interface HeaderProps {
   user: any | null;
   onAuth: () => void;
   onLogout: () => void;
+  isAdmin: boolean;
+  onAdminOpen: () => void;
 }
 
-export default function Header({ user, onAuth, onLogout }: HeaderProps) {
+export default function Header({ user, onAuth, onLogout, isAdmin, onAdminOpen }: HeaderProps) {
   return (
     <motion.header 
       initial={{ opacity: 0, y: -20 }}
@@ -26,6 +29,15 @@ export default function Header({ user, onAuth, onLogout }: HeaderProps) {
       <div className="flex items-center gap-3 sm:gap-6">
         {user ? (
           <div className="flex items-center gap-3">
+            {isAdmin && (
+              <button
+                onClick={onAdminOpen}
+                aria-label="Open admin dashboard"
+                className="p-2 rounded-full border border-black/10 text-[#1D1C1A] hover:border-black/20 hover:bg-black/5 transition-colors"
+              >
+                <LayoutDashboard size={16} />
+              </button>
+            )}
             <span className="text-[10px] sm:text-[11px] font-medium tracking-[0.2em] text-[#6F6A63] uppercase">
               {user.displayName ? `Hi, ${user.displayName}` : "Signed In"}
             </span>

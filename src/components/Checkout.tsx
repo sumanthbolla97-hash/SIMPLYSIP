@@ -97,7 +97,8 @@ function IngredientTicker({ desc }: { desc?: string }) {
 }
 
 export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem, onIncrementItem, onDecrementItem, onAddressUpdate }: CheckoutProps) {
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [orderId, setOrderId] = useState<string | null>(null);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [location, setLocation] = useState("");
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
@@ -273,9 +274,11 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
       .join("\n");
     const accuracyText = locationAccuracy ? ` (accuracy ${locationAccuracy}m)` : "";
     const message = `Hi Simply Sip, I placed an order.\n\nItems:\n${itemsText}\n\nSubtotal: ${rupee}${cartTotal}\nDelivery: ${rupee}${deliveryFee}\nTotal: ${rupee}${grandTotal}\n\nName: ${formData.name}\nAddress: ${formData.address}\nArea: ${formData.area}\nLocation: ${location}${accuracyText}\nPayment Done.`;
+    let createdOrderId: string | null = null;
     try {
-      await addDoc(collection(db, "orders"), {
+      const docRef = await addDoc(collection(db, "orders"), {
         userId: user?.uid || null,
+        userEmail: user?.email || null,
         items: cartItems.map((item) => ({
           id: item.id,
           name: item.name,
@@ -297,9 +300,12 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
         status: "pending",
         createdAt: serverTimestamp()
       });
+      createdOrderId = docRef.id;
     } catch (err) {
       console.error("Failed to save order:", err);
     }
+    setOrderId(createdOrderId);
+    setStep(3);
     const whatsappUrl = `https://wa.me/919999999999?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
     onClearCart();
@@ -549,7 +555,7 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
               </button>
             </div>
           </form>
-        ) : (
+        ) : step === 2 ? (
           <div className="space-y-12">
             <div className="bg-white p-10 md:p-16 border border-black/5 text-center flex flex-col items-center relative overflow-hidden">
               <div className="w-16 h-16 bg-[#1A1A1A] rounded-full flex items-center justify-center mb-8 relative z-10">
@@ -580,6 +586,30 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
                 You will be redirected to WhatsApp to confirm.
               </p>
             </div>
+          </div>
+        ) : (
+          <div className="space-y-10">
+            <div className="bg-white p-10 md:p-16 border border-black/5 text-center flex flex-col items-center relative overflow-hidden">
+              <div className="w-16 h-16 bg-[#1A1A1A] rounded-full flex items-center justify-center mb-8 relative z-10">
+                <QrCode className="text-white" size={24} strokeWidth={1.5} />
+              </div>
+              <h3 className="text-3xl font-serif text-[#1A1A1A] mb-3 relative z-10">Order Successful</h3>
+              <p className="text-sm font-light text-gray-500 mb-6 relative z-10">
+                Your order has been placed. We will confirm shortly.
+              </p>
+              {orderId && (
+                <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400 relative z-10">
+                  Order ID: {orderId}
+                </div>
+              )}
+            </div>
+
+            <button 
+              onClick={onBack}
+              className="w-full py-5 bg-[#1A1A1A] text-white font-semibold tracking-[0.1em] hover:bg-black transition-all duration-500 uppercase text-[11px] shadow-xl shadow-black/5 hover:shadow-black/15 hover:-translate-y-0.5"
+            >
+              Back to Menu
+            </button>
           </div>
         )}
       </div>

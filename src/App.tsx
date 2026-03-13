@@ -11,10 +11,11 @@ import AdminDashboard from './components/AdminDashboard';
 import FinalCTA from './components/FinalCTA';
 import AuthModal from './components/AuthModal';
 import { isSignInWithEmailLink, onAuthStateChanged, signInWithEmailLink, signOut } from 'firebase/auth';
-import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebaseConfig';
 
 export default function App() {
+  const ADMIN_EMAIL = "sumanthbolla97@gmail.com";
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -26,6 +27,8 @@ export default function App() {
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [user, setUser] = useState<any | null>(null);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
+  const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL;
+  const [isCartHydrated, setIsCartHydrated] = useState(false);
   const cartCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
   const subscriptionTotal =
     (cart.sub_weekly ? 699 : 0) + (cart.sub_monthly ? 2599 : 0);
@@ -77,9 +80,67 @@ export default function App() {
       setUser(currentUser);
       if (currentUser) {
         setIsAuthOpen(false);
+        if (currentUser.email?.toLowerCase() === ADMIN_EMAIL) {
+          setIsAdminOpen(true);
+        }
+      } else {
+        setIsAdminOpen(false);
+        setIsCartHydrated(false);
       }
     });
   }, []);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem("simplysip_cart");
+      if (saved) {
+        setCart(JSON.parse(saved));
+      }
+    } catch {
+      // ignore malformed local storage
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem("simplysip_cart", JSON.stringify(cart));
+  }, [cart]);
+
+  useEffect(() => {
+    if (!user) return;
+    const hydrateCart = async () => {
+      const localCart = (() => {
+        try {
+          const saved = window.localStorage.getItem("simplysip_cart");
+          return saved ? JSON.parse(saved) : null;
+        } catch {
+          return null;
+        }
+      })();
+
+      const snap = await getDoc(doc(db, "users", user.uid));
+      const data = snap.exists() ? (snap.data() as any) : null;
+      if (data?.cart && Object.keys(data.cart).length > 0) {
+        setCart(data.cart);
+      } else if (localCart && Object.keys(localCart).length > 0) {
+        setCart(localCart);
+        await setDoc(doc(db, "users", user.uid), { cart: localCart }, { merge: true });
+      }
+      setIsCartHydrated(true);
+    };
+    hydrateCart();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || !isCartHydrated) return;
+    const handle = window.setTimeout(() => {
+      setDoc(
+        doc(db, "users", user.uid),
+        { cart, cartUpdatedAt: serverTimestamp() },
+        { merge: true }
+      );
+    }, 500);
+    return () => window.clearTimeout(handle);
+  }, [cart, user, isCartHydrated]);
 
   useEffect(() => {
     if (isSignInWithEmailLink(auth, window.location.href)) {
@@ -160,6 +221,8 @@ export default function App() {
                 setIsAuthOpen(true);
               }}
               onLogout={() => setIsLogoutOpen(true)}
+              isAdmin={isAdmin}
+              onAdminOpen={() => setIsAdminOpen(true)}
             />
             <Hero onSubscribe={() => setIsPlanOpen(true)} />
             <Menu 
