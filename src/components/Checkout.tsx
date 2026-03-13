@@ -296,19 +296,19 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
                 <div className="divide-y divide-black/5">
                   {cartItems.map((item) => (
                     <div key={item.id} className="py-4 first:pt-0 last:pb-0">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                        <div className="flex-1 min-w-0">
                           <div className="text-base font-medium text-[#1A1A1A]">{item.name}</div>
                           <IngredientTicker desc={item.desc} />
                         </div>
-                        <div className="text-sm font-semibold text-[#1A1A1A] pl-2">{rupee}{getOffer(item) * cart[item.id]}</div>
+                        <div className="text-sm font-semibold text-[#1A1A1A] sm:pl-2 shrink-0">{rupee}{getOffer(item) * cart[item.id]}</div>
                       </div>
-                      <div className="flex items-end justify-between mt-2">
+                      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                         <div className="text-xs text-gray-500">
                           <span className="line-through mr-2">{rupee}{getMrp(item)}</span>
                           <span className="text-[#1A1A1A] font-semibold">{rupee}{getOffer(item)}</span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
                           <button
                             type="button"
                             onClick={() => onDecrementItem(item.id)}

@@ -2,13 +2,14 @@ import { motion } from 'motion/react';
 import { Milk } from 'lucide-react';
 
 interface HeaderProps {
-  user: any;
-  onLogout: () => void;
+  onSubscribe: () => void;
   onCheckout: () => void;
+  onAuth: () => void;
   cartCount: number;
+  cartTotal: number;
 }
 
-export default function Header({ user, onLogout, onCheckout, cartCount }: HeaderProps) {
+export default function Header({ onSubscribe, onCheckout, onAuth, cartCount, cartTotal }: HeaderProps) {
   return (
     <motion.header 
       initial={{ opacity: 0, y: -20 }}
@@ -26,12 +27,15 @@ export default function Header({ user, onLogout, onCheckout, cartCount }: Header
       </div>
       
       <div className="flex items-center gap-3 sm:gap-6">
-        <div className="flex items-center gap-4">
-          <span className="text-sm font-medium">Welcome, {user.name}</span>
-          <button onClick={onLogout} className="text-[10px] sm:text-[11px] font-medium tracking-[0.2em] text-[#6F6A63] hover:text-black transition-colors uppercase">
-            Logout
-          </button>
-        </div>
+        <a href="#menu" className="text-[10px] sm:text-[11px] font-medium tracking-[0.2em] text-[#6F6A63] hover:text-black transition-colors uppercase">
+          Menu
+        </a>
+        <button
+          onClick={onAuth}
+          className="text-[10px] sm:text-[11px] font-medium tracking-[0.2em] text-[#6F6A63] hover:text-black transition-colors uppercase"
+        >
+          Login
+        </button>
         <div className="flex flex-col items-end gap-1">
           <button 
             onClick={onCheckout}
