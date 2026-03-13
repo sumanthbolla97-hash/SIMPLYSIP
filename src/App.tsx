@@ -116,16 +116,23 @@ export default function App() {
           return null;
         }
       })();
-
-      const snap = await getDoc(doc(db, "users", user.uid));
-      const data = snap.exists() ? (snap.data() as any) : null;
-      if (data?.cart && Object.keys(data.cart).length > 0) {
-        setCart(data.cart);
-      } else if (localCart && Object.keys(localCart).length > 0) {
-        setCart(localCart);
-        await setDoc(doc(db, "users", user.uid), { cart: localCart }, { merge: true });
+      try {
+        const snap = await getDoc(doc(db, "users", user.uid));
+        const data = snap.exists() ? (snap.data() as any) : null;
+        if (data?.cart && Object.keys(data.cart).length > 0) {
+          setCart(data.cart);
+        } else if (localCart && Object.keys(localCart).length > 0) {
+          setCart(localCart);
+          await setDoc(doc(db, "users", user.uid), { cart: localCart }, { merge: true });
+        }
+      } catch (err) {
+        console.warn("Failed to hydrate cart from Firestore:", err);
+        if (localCart && Object.keys(localCart).length > 0) {
+          setCart(localCart);
+        }
+      } finally {
+        setIsCartHydrated(true);
       }
-      setIsCartHydrated(true);
     };
     hydrateCart();
   }, [user]);
@@ -137,7 +144,9 @@ export default function App() {
         doc(db, "users", user.uid),
         { cart, cartUpdatedAt: serverTimestamp() },
         { merge: true }
-      );
+      ).catch((err) => {
+        console.warn("Failed to persist cart:", err);
+      });
     }, 500);
     return () => window.clearTimeout(handle);
   }, [cart, user, isCartHydrated]);

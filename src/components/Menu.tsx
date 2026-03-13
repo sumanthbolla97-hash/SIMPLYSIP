@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction, CSSProperties } from 'react';
 import { motion } from 'motion/react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
+import { seedMenu } from '../data/seedMenu';
 
 interface MenuProps {
   cart: Record<string, number>;
@@ -74,162 +77,24 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const rupee = "\u20B9";
-  const bullet = "\u2022";
-
-  const fallbackMenu = [
-    {
-      id: "1",
-      category: "Signature Blends",
-      name: "Hulk Greens",
-      desc: `Green Apple ${bullet} Cucumber ${bullet} Ginger ${bullet} Spinach ${bullet} Lime`,
-      image: "/images/hulk-greens.png",
-      mrp: 170,
-      offerPrice: 129
-    },
-    {
-      id: "2",
-      category: "Signature Blends",
-      name: "Melon Booster",
-      desc: `Watermelon ${bullet} Cucumber ${bullet} Mint`,
-      image: "/images/melon-booster.png",
-      mrp: 150,
-      offerPrice: 119
-    },
-    {
-      id: "3",
-      category: "Signature Blends",
-      name: "ABC",
-      desc: `Apple ${bullet} Beetroot ${bullet} Carrot`,
-      image: "/images/abc.png",
-      mrp: 160,
-      offerPrice: 119
-    },
-    {
-      id: "4",
-      category: "Signature Blends",
-      name: "A-Star",
-      desc: `Apple ${bullet} Pomegranate`,
-      image: "/images/a-star.png",
-      mrp: 170,
-      offerPrice: 129
-    },
-    {
-      id: "5",
-      category: "Signature Blends",
-      name: "AMG",
-      desc: `Apple ${bullet} Mint ${bullet} Ginger`,
-      image: "/images/amg.png",
-      mrp: 160,
-      offerPrice: 119
-    },
-    {
-      id: "6",
-      category: "Signature Blends",
-      name: "Ganga Jamuna",
-      desc: `Orange ${bullet} Mosambi`,
-      image: "/images/ganga-jamuna.png",
-      mrp: 150,
-      offerPrice: 119
-    },
-    {
-      id: "7",
-      category: "Single Fruit Series",
-      name: "Coco Fresh",
-      desc: "Tender Coconut Water",
-      image: "/images/coco-fresh.png",
-      mrp: 170,
-      offerPrice: 129
-    },
-    {
-      id: "8",
-      category: "Single Fruit Series",
-      name: "Sunshine Sip",
-      desc: "Mosambi",
-      image: "/images/sunshine-sip.png",
-      mrp: 150,
-      offerPrice: 119
-    },
-    {
-      id: "9",
-      category: "Single Fruit Series",
-      name: "Golden Sunrise",
-      desc: "Orange",
-      image: "/images/golden-sunrise.png",
-      mrp: 150,
-      offerPrice: 119
-    },
-    {
-      id: "10",
-      category: "Single Fruit Series",
-      name: "Orchard Gold",
-      desc: "Apple",
-      image: "/images/orchard-gold.png",
-      mrp: 160,
-      offerPrice: 119
-    },
-    {
-      id: "11",
-      category: "Single Fruit Series",
-      name: "Tropical Bliss",
-      desc: "Pineapple",
-      image: "/images/tropical-bliss.png",
-      mrp: 160,
-      offerPrice: 119
-    },
-    {
-      id: "12",
-      category: "Single Fruit Series",
-      name: "Velvet Vine",
-      desc: "Pomegranate",
-      image: "/images/velvet-vine.png",
-      mrp: 170,
-      offerPrice: 129
-    },
-    {
-      id: "13",
-      category: "Single Fruit Series",
-      name: "Purple Crush",
-      desc: "Black Grapes",
-      image: "/images/purple-crush.png",
-      mrp: 170,
-      offerPrice: 129
-    },
-    {
-      id: "14",
-      category: "Single Fruit Series",
-      name: "Verjus",
-      desc: "Green Grapes",
-      image: "/images/verjus.png",
-      mrp: 170,
-      offerPrice: 129
-    },
-    {
-      id: "15",
-      category: "Single Fruit Series",
-      name: "Garden Joy",
-      desc: "Carrot",
-      image: "/images/garden-joy.png",
-      mrp: 140,
-      offerPrice: 109
-    }
-  ];
-
   useEffect(() => {
-    fetch('/api/menu')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
+    const loadMenu = async () => {
+      try {
+        const snap = await getDocs(collection(db, "menu"));
+        const data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        if (data.length > 0) {
           setMenuItems(data);
         } else {
-          setMenuItems(fallbackMenu);
+          setMenuItems(seedMenu.map((item, index) => ({ id: `${index + 1}`, ...item })));
         }
-        setLoading(false);
-      })
-      .catch(err => {
+      } catch (err) {
         console.error(err);
-        setMenuItems(fallbackMenu);
+        setMenuItems(seedMenu.map((item, index) => ({ id: `${index + 1}`, ...item })));
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+    loadMenu();
   }, []);
 
   const roundUpTo9 = (value: number) => {

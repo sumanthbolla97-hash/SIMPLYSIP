@@ -1,19 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Trash2, ArrowLeft } from 'lucide-react';
-import { collection, getDocs, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import { seedMenu } from '../data/seedMenu';
 
 export default function AdminDashboard({ onBack }: { onBack: () => void }) {
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<any[]>(
+    seedMenu.map((item, index) => ({ id: `seed-${index + 1}`, ...item }))
+  );
+  const [loading, setLoading] = useState(false);
   const [statsLoading, setStatsLoading] = useState(true);
   const [totalUsers, setTotalUsers] = useState(0);
   const [upcomingOrders, setUpcomingOrders] = useState(0);
   const [subscribers, setSubscribers] = useState(0);
+  const [userCountError, setUserCountError] = useState(false);
   const [orders, setOrders] = useState<any[]>([]);
   const [toastOrder, setToastOrder] = useState<any | null>(null);
   const hasLoadedOrders = useRef(false);
+  const hasAutoSeeded = useRef(false);
+  const [menuError, setMenuError] = useState<string | null>(null);
+  const [isSeeding, setIsSeeding] = useState(false);
   
   // Form state
   const [name, setName] = useState('');
@@ -23,9 +30,48 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
   const [offerPrice, setOfferPrice] = useState('119');
   const [image, setImage] = useState('');
 
+  const handleSeedMenu = async () => {
+    if (items.length > 0) return;
+    setIsSeeding(true);
+    try {
+      await Promise.all(
+        seedMenu.map((item) =>
+          addDoc(collection(db, "menu"), {
+            ...item,
+            createdAt: serverTimestamp()
+          })
+        )
+      );
+    } catch (err) {
+      console.error("Failed to seed menu:", err);
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   useEffect(() => {
-    fetchItems();
+    const menuQuery = query(collection(db, "menu"));
+    const unsubscribeMenu = onSnapshot(
+      menuQuery,
+      (snapshot) => {
+        const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setItems(data.length > 0 ? data : seedMenu.map((item, index) => ({ id: `seed-${index + 1}`, ...item })));
+        setMenuError(null);
+        setLoading(false);
+        if (data.length === 0 && !hasAutoSeeded.current) {
+          hasAutoSeeded.current = true;
+          handleSeedMenu();
+        }
+      },
+      (err) => {
+        console.error("Failed to load menu:", err);
+        setMenuError("Menu failed to load. Check Firestore rules.");
+        setLoading(false);
+      }
+    );
+
     fetchUserCount();
+
     const ordersQuery = query(collection(db, "orders"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
       const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -39,7 +85,10 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
       }
       hasLoadedOrders.current = true;
     });
-    return () => unsubscribe();
+    return () => {
+      unsubscribeMenu();
+      unsubscribe();
+    };
   }, []);
 
   const fetchItems = async () => {
@@ -60,6 +109,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
       setTotalUsers(usersSnap.size);
     } catch (err) {
       console.error("Failed to load admin stats:", err);
+      setUserCountError(true);
     } finally {
       setStatsLoading(false);
     }
@@ -75,32 +125,32 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
         order.items.some((item: any) => item.id === "sub_weekly" || item.id === "sub_monthly")
       ).length
     );
-  }, [orders]);
+    if (userCountError) {
+      const uniqueUsers = new Set(
+        orders.map((order: any) => order.userId).filter(Boolean)
+      );
+      setTotalUsers(uniqueUsers.size);
+    }
+  }, [orders, userCountError]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/menu', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          desc,
-          image,
-          category,
-          mrp: Number(mrp),
-          offerPrice: Number(offerPrice),
-          price: Number(offerPrice)
-        })
+      await addDoc(collection(db, "menu"), {
+        name,
+        desc,
+        image,
+        category,
+        mrp: Number(mrp),
+        offerPrice: Number(offerPrice),
+        price: Number(offerPrice),
+        createdAt: serverTimestamp()
       });
-      if (res.ok) {
-        setName('');
-        setDesc('');
-        setMrp('150');
-        setOfferPrice('119');
-        setImage('');
-        fetchItems();
-      }
+      setName('');
+      setDesc('');
+      setMrp('150');
+      setOfferPrice('119');
+      setImage('');
     } catch (err) {
       console.error(err);
     }
@@ -108,10 +158,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
 
   const handleDelete = async (id: string) => {
     try {
-      const res = await fetch(`/api/menu?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
-      if (res.ok) {
-        fetchItems();
-      }
+      await deleteDoc(doc(db, "menu", id));
     } catch (err) {
       console.error(err);
     }
@@ -235,8 +282,19 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
             <h2 className="text-2xl font-bold tracking-tight mb-8 text-[#1D1D1F]">Current Menu</h2>
             {loading ? (
               <p className="text-gray-500 font-medium">Loading menu...</p>
+            ) : menuError ? (
+              <p className="text-red-500 font-medium">{menuError}</p>
             ) : items.length === 0 ? (
-              <p className="text-gray-500 font-medium">No items found.</p>
+              <div className="space-y-4">
+                <p className="text-gray-500 font-medium">No items found.</p>
+                <button
+                  onClick={handleSeedMenu}
+                  disabled={isSeeding}
+                  className="px-5 py-3 rounded-full border border-black/10 text-[10px] font-semibold tracking-[0.2em] uppercase text-[#1D1C1A] hover:border-black/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isSeeding ? "Seeding..." : "Seed Default Menu"}
+                </button>
+              </div>
             ) : (
               items.map((item) => (
                 <motion.div 

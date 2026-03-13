@@ -590,9 +590,46 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
         ) : (
           <div className="space-y-10">
             <div className="bg-white p-10 md:p-16 border border-black/5 text-center flex flex-col items-center relative overflow-hidden">
-              <div className="w-16 h-16 bg-[#1A1A1A] rounded-full flex items-center justify-center mb-8 relative z-10">
-                <QrCode className="text-white" size={24} strokeWidth={1.5} />
-              </div>
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                className="relative w-24 h-24 mb-8"
+              >
+                <motion.div
+                  className="absolute inset-0 rounded-full border border-black/20"
+                  animate={{ scale: [0.9, 1.05, 0.95], opacity: [0.6, 0.2, 0.6] }}
+                  transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                />
+                <div className="w-full h-full rounded-full bg-[#1A1A1A] flex items-center justify-center relative z-10">
+                  <motion.svg
+                    width="46"
+                    height="46"
+                    viewBox="0 0 52 52"
+                    fill="none"
+                    initial={false}
+                  >
+                    <motion.circle
+                      cx="26"
+                      cy="26"
+                      r="24"
+                      stroke="rgba(255,255,255,0.25)"
+                      strokeWidth="2"
+                    />
+                    <motion.path
+                      d="M15 27.5L22.5 35L38 19"
+                      stroke="#FFFFFF"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeDasharray="60"
+                      strokeDashoffset="60"
+                      animate={{ strokeDashoffset: 0 }}
+                      transition={{ duration: 0.8, delay: 0.15, ease: "easeOut" }}
+                    />
+                  </motion.svg>
+                </div>
+              </motion.div>
               <h3 className="text-3xl font-serif text-[#1A1A1A] mb-3 relative z-10">Order Successful</h3>
               <p className="text-sm font-light text-gray-500 mb-6 relative z-10">
                 Your order has been placed. We will confirm shortly.
