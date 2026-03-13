@@ -24,9 +24,6 @@ export default function Header({ user, onAuth, onLogout }: HeaderProps) {
       </div>
       
       <div className="flex items-center gap-3 sm:gap-6">
-        <a href="#menu" className="text-[10px] sm:text-[11px] font-medium tracking-[0.2em] text-[#6F6A63] hover:text-black transition-colors uppercase">
-          Menu
-        </a>
         {user ? (
           <div className="flex items-center gap-3">
             <span className="text-[10px] sm:text-[11px] font-medium tracking-[0.2em] text-[#6F6A63] uppercase">
