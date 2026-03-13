@@ -111,6 +111,7 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
     area: user?.area || ''
   });
   const [addressType, setAddressType] = useState(user?.addressType || 'Home');
+  const [isAddressLocked, setIsAddressLocked] = useState(false);
   const rupee = "\u20B9";
 
   useEffect(() => {
@@ -224,13 +225,22 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
       alert("Please login to save your address.");
       return;
     }
+    if (!formData.name.trim() || !formData.phone.trim() || !formData.address.trim() || !formData.area || formData.area === "Select Area") {
+      alert("Please fill all address fields before saving.");
+      return;
+    }
     onAddressUpdate({
       address: formData.address,
       area: formData.area,
       addressType: addressType,
       phone: formData.phone
     });
+    setIsAddressLocked(true);
     alert("Address saved!");
+  };
+
+  const handleEditAddress = () => {
+    setIsAddressLocked(false);
   };
 
   const handleProceedToPayment = (e: React.FormEvent) => {
@@ -405,7 +415,8 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className="w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-base focus:outline-none focus:border-black transition-colors font-light"
+                    disabled={isAddressLocked}
+                    className="w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-base focus:outline-none focus:border-black transition-colors font-light disabled:opacity-60 disabled:cursor-not-allowed"
                     placeholder="Full Name"
                     required
                   />
@@ -417,7 +428,8 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    className="w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-base focus:outline-none focus:border-black transition-colors font-light"
+                    disabled={isAddressLocked}
+                    className="w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-base focus:outline-none focus:border-black transition-colors font-light disabled:opacity-60 disabled:cursor-not-allowed"
                     placeholder="+91"
                     required
                   />
@@ -432,7 +444,8 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
                       name="area"
                       value={formData.area}
                       onChange={handleInputChange}
-                      className="w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-base focus:outline-none focus:border-black transition-colors appearance-none font-light"
+                      disabled={isAddressLocked}
+                      className="w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-base focus:outline-none focus:border-black transition-colors appearance-none font-light disabled:opacity-60 disabled:cursor-not-allowed"
                       required
                     >
                       {SECUNDERABAD_ZONES.map(zone => (
@@ -448,7 +461,8 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
                     name="address"
                     value={formData.address}
                     onChange={handleInputChange}
-                    className="w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-base focus:outline-none focus:border-black transition-colors resize-none h-[110px] font-light"
+                    disabled={isAddressLocked}
+                    className="w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-base focus:outline-none focus:border-black transition-colors resize-none h-[110px] font-light disabled:opacity-60 disabled:cursor-not-allowed"
                     placeholder="House No, Street, Landmark"
                     required
                   />
@@ -466,7 +480,8 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
                                 value={type} 
                                 checked={addressType === type}
                                 onChange={(e) => setAddressType(e.target.value)}
-                                className="h-4 w-4 text-black border-gray-300 focus:ring-black"
+                                disabled={isAddressLocked}
+                                className="h-4 w-4 text-black border-gray-300 focus:ring-black disabled:cursor-not-allowed"
                             />
                             <span className="text-sm text-gray-600">{type}</span>
                         </label>
@@ -475,13 +490,23 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
               </div>
 
               <div className="pt-4">
-                <button 
-                    type="button" 
-                    onClick={handleSaveAddress}
-                    className="px-5 py-3 rounded-full border border-black/10 text-[10px] font-semibold tracking-[0.2em] uppercase text-[#1D1C1A] hover:border-black/20 transition-colors"
-                >
-                    Save Address
-                </button>
+                {!isAddressLocked ? (
+                  <button 
+                      type="button" 
+                      onClick={handleSaveAddress}
+                      className="px-5 py-3 rounded-full border border-black/10 text-[10px] font-semibold tracking-[0.2em] uppercase text-[#1D1C1A] hover:border-black/20 transition-colors"
+                  >
+                      Save Address
+                  </button>
+                ) : (
+                  <button 
+                      type="button" 
+                      onClick={handleEditAddress}
+                      className="px-5 py-3 rounded-full border border-black/10 text-[10px] font-semibold tracking-[0.2em] uppercase text-[#1D1C1A] hover:border-black/20 transition-colors"
+                  >
+                      Edit Address
+                  </button>
+                )}
               </div>
 
               <div className="space-y-3">
