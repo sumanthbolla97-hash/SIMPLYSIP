@@ -257,7 +257,9 @@ export default function App() {
     });
   };
 
-  const displayOrders: Order[] = [...localUserOrders, ...userOrders].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const displayOrders: Order[] = Array.from(
+    new Map([...localUserOrders, ...userOrders].map((o) => [o.id, o])).values()
+  ).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
   return (
     <div className="relative min-h-screen bg-[#FBFAF7] selection:bg-[#1D1C1A] selection:text-white">
