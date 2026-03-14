@@ -8,7 +8,12 @@ export const seedMenu = [
     image: "/images/hulk-greens.png",
     mrp: 170,
     offerPrice: 129,
-    price: 129
+    price: 129,
+    benefits: [
+      "Hydration support from cucumber's high water content",
+      "Vitamin K from spinach supports bones and blood clotting",
+      "Ginger is studied for nausea support"
+    ]
   },
   {
     category: "Signature Blends",
@@ -17,7 +22,12 @@ export const seedMenu = [
     image: "/images/melon-booster.png",
     mrp: 150,
     offerPrice: 119,
-    price: 119
+    price: 119,
+    benefits: [
+      "Lycopene-rich watermelon antioxidants",
+      "Hydration boost from cucumber (96% water)",
+      "Light, low-calorie refreshment"
+    ]
   },
   {
     category: "Signature Blends",
@@ -26,7 +36,12 @@ export const seedMenu = [
     image: "/images/abc.png",
     mrp: 160,
     offerPrice: 119,
-    price: 119
+    price: 119,
+    benefits: [
+      "Beetroot nitrates support nitric oxide availability",
+      "Beta-carotene (vitamin A) supports vision and immunity",
+      "Apple phytochemicals like quercetin and catechin"
+    ]
   },
   {
     category: "Signature Blends",
@@ -35,7 +50,12 @@ export const seedMenu = [
     image: "/images/a-star.png",
     mrp: 170,
     offerPrice: 129,
-    price: 129
+    price: 129,
+    benefits: [
+      "Pomegranate polyphenol antioxidants",
+      "Apple phytochemicals like quercetin and catechin",
+      "Vitamin C contribution from apples"
+    ]
   },
   {
     category: "Signature Blends",
@@ -44,7 +64,12 @@ export const seedMenu = [
     image: "/images/amg.png",
     mrp: 160,
     offerPrice: 119,
-    price: 119
+    price: 119,
+    benefits: [
+      "Ginger is studied for nausea support",
+      "Apple phytochemical antioxidants",
+      "Vitamin C contribution from apples"
+    ]
   },
   {
     category: "Signature Blends",
@@ -53,7 +78,12 @@ export const seedMenu = [
     image: "/images/ganga-jamuna.png",
     mrp: 150,
     offerPrice: 119,
-    price: 119
+    price: 119,
+    benefits: [
+      "Vitamin C supports immune function",
+      "Vitamin C helps collagen formation and wound healing",
+      "Vitamin C improves iron absorption"
+    ]
   },
   {
     category: "Single Fruit Series",
@@ -62,7 +92,12 @@ export const seedMenu = [
     image: "/images/coco-fresh.png",
     mrp: 170,
     offerPrice: 129,
-    price: 129
+    price: 129,
+    benefits: [
+      "Electrolytes like potassium support hydration",
+      "Naturally low in calories",
+      "Mineral-rich refreshment"
+    ]
   },
   {
     category: "Single Fruit Series",
@@ -71,7 +106,12 @@ export const seedMenu = [
     image: "/images/sunshine-sip.png",
     mrp: 150,
     offerPrice: 119,
-    price: 119
+    price: 119,
+    benefits: [
+      "Vitamin C antioxidant protection",
+      "Vitamin C supports immune function",
+      "Vitamin C improves iron absorption"
+    ]
   },
   {
     category: "Single Fruit Series",
@@ -80,7 +120,12 @@ export const seedMenu = [
     image: "/images/golden-sunrise.png",
     mrp: 150,
     offerPrice: 119,
-    price: 119
+    price: 119,
+    benefits: [
+      "Vitamin C helps collagen formation",
+      "Vitamin C supports immune function",
+      "Vitamin C antioxidant protection"
+    ]
   },
   {
     category: "Single Fruit Series",
@@ -89,7 +134,12 @@ export const seedMenu = [
     image: "/images/orchard-gold.png",
     mrp: 160,
     offerPrice: 119,
-    price: 119
+    price: 119,
+    benefits: [
+      "Apple phytochemicals like quercetin and catechin",
+      "Vitamin C contribution from apples",
+      "Naturally occurring antioxidants"
+    ]
   },
   {
     category: "Single Fruit Series",
@@ -98,7 +148,12 @@ export const seedMenu = [
     image: "/images/tropical-bliss.png",
     mrp: 160,
     offerPrice: 119,
-    price: 119
+    price: 119,
+    benefits: [
+      "Vitamin C supports immune function",
+      "Manganese supports energy and cell protection",
+      "Vitamin C helps collagen formation"
+    ]
   },
   {
     category: "Single Fruit Series",
@@ -107,7 +162,12 @@ export const seedMenu = [
     image: "/images/velvet-vine.png",
     mrp: 170,
     offerPrice: 129,
-    price: 129
+    price: 129,
+    benefits: [
+      "Polyphenol antioxidants (punicalagins, ellagitannins)",
+      "Antioxidant activity studied in pomegranate",
+      "Naturally rich in plant polyphenols"
+    ]
   },
   {
     category: "Single Fruit Series",
@@ -116,7 +176,12 @@ export const seedMenu = [
     image: "/images/purple-crush.png",
     mrp: 170,
     offerPrice: 129,
-    price: 129
+    price: 129,
+    benefits: [
+      "Antioxidants like resveratrol, catechins, quercetin, anthocyanins",
+      "Hydrating fruit with natural water content",
+      "Vitamin C contribution from grapes"
+    ]
   },
   {
     category: "Single Fruit Series",
@@ -125,7 +190,12 @@ export const seedMenu = [
     image: "/images/verjus.png",
     mrp: 170,
     offerPrice: 129,
-    price: 129
+    price: 129,
+    benefits: [
+      "Hydrating fruit with natural water content",
+      "Antioxidants like resveratrol and catechins",
+      "Vitamin C contribution from grapes"
+    ]
   },
   {
     category: "Single Fruit Series",
@@ -134,6 +204,11 @@ export const seedMenu = [
     image: "/images/garden-joy.png",
     mrp: 140,
     offerPrice: 109,
-    price: 109
+    price: 109,
+    benefits: [
+      "Beta-carotene (vitamin A) supports vision",
+      "Vitamin A supports immune function",
+      "Vitamin A supports growth and development"
+    ]
   }
 ];

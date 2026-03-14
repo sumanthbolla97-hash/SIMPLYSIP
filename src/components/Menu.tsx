@@ -235,7 +235,7 @@ function ProductPanel({
             exit="exit"
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="relative max-h-[85vh] overflow-y-auto">
+            <div className="relative overflow-hidden">
               <div className="absolute inset-0 bg-white pointer-events-none" />
               <div
                 className="absolute inset-0 pointer-events-none opacity-30"
@@ -265,19 +265,19 @@ function ProductPanel({
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="rounded-2xl border border-black/5 p-4">
+                  <div className="rounded-2xl border-2 border-[#1D1C1A] p-4 bg-white/80">
                     <div className="text-[10px] uppercase tracking-[0.2em] text-[#1D1C1A] mb-2 font-semibold">Calories</div>
                     <div className="text-lg font-bold text-[#1D1C1A]">{product.nutrition.calories} kcal</div>
                   </div>
-                  <div className="rounded-2xl border border-black/5 p-4">
+                  <div className="rounded-2xl border-2 border-[#1D1C1A] p-4 bg-white/80">
                     <div className="text-[10px] uppercase tracking-[0.2em] text-[#1D1C1A] mb-2 font-semibold">Vitamin</div>
                     <div className="text-lg font-bold text-[#1D1C1A]">{product.nutrition.vitamin}</div>
                   </div>
-                  <div className="rounded-2xl border border-black/5 p-4">
+                  <div className="rounded-2xl border-2 border-[#1D1C1A] p-4 bg-white/80">
                     <div className="text-[10px] uppercase tracking-[0.2em] text-[#1D1C1A] mb-2 font-semibold">Preservatives</div>
                     <div className="text-lg font-bold text-[#1D1C1A]">{product.nutrition.preservatives}</div>
                   </div>
-                  <div className="rounded-2xl border border-black/5 p-4">
+                  <div className="rounded-2xl border-2 border-[#1D1C1A] p-4 bg-white/80">
                     <div className="text-[10px] uppercase tracking-[0.2em] text-[#1D1C1A] mb-2 font-semibold">Cold Pressed</div>
                     <div className="text-lg font-bold text-[#1D1C1A]">Yes</div>
                   </div>
