@@ -135,44 +135,72 @@ function SweetnessScale({ value }: { value: number }) {
 
 function MenuCard({
   product,
-  onClick
+  onClick,
+  onIncrement,
+  onDecrement,
+  qty
 }: {
   product: ProductData;
   onClick: (product: ProductData) => void;
+  onIncrement: (product: ProductData) => void;
+  onDecrement: (product: ProductData) => void;
+  qty: number;
 }) {
   return (
-    <button type="button" onClick={() => onClick(product)} className="group text-left w-full">
-      <div className="relative aspect-[4/5] sm:aspect-[3/4] w-full bg-[#FBFAF7] rounded-[2rem] overflow-hidden mb-3 sm:mb-6 shadow-[0_35px_80px_-60px_rgba(0,0,0,0.35)] border border-black/5 transition-transform duration-500 group-hover:-translate-y-1">
-        {product.bestSeller && (
-          <div className="absolute top-4 left-4 z-10 bg-[#1D1C1A] text-white text-[10px] uppercase tracking-[0.2em] px-3 py-1 rounded-full">
-            Best Seller
-          </div>
-        )}
-        <img
-          src={product.image}
-          alt={product.name}
-          className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
-          referrerPolicy="no-referrer"
-        />
-      </div>
-      <div className="px-2 text-center flex flex-col flex-1 min-w-0">
-        <h4 className="text-base sm:text-xl font-semibold tracking-tight text-[#1D1C1A] font-display whitespace-nowrap overflow-hidden text-ellipsis">
-          {product.name}
-        </h4>
-        <div className="flex items-baseline justify-center gap-3 mt-2">
-          <span className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-[#6F6A63] border border-black/10 rounded-full min-w-[72px] h-6 px-2 flex items-center justify-center">
-            25% Off
-          </span>
-          <span className="text-[11px] sm:text-sm text-[#A7A29C] line-through font-medium">
-            {"\u20B9"}{product.mrp ?? product.price ?? 0}
-          </span>
-          <span className="text-sm sm:text-lg font-semibold text-[#1D1C1A]">
-            {"\u20B9"}{product.offerPrice ?? product.price ?? 0}
-          </span>
+    <div className="group text-left w-full">
+      <button type="button" onClick={() => onClick(product)} className="w-full text-left">
+        <div className="relative aspect-[4/5] sm:aspect-[3/4] w-full bg-[#FBFAF7] rounded-[2rem] overflow-hidden mb-3 sm:mb-6 shadow-[0_35px_80px_-60px_rgba(0,0,0,0.35)] border border-black/5 transition-transform duration-500 group-hover:-translate-y-1">
+          {product.bestSeller && (
+            <div className="absolute top-4 left-4 z-10 bg-[#1D1C1A] text-white text-[10px] uppercase tracking-[0.2em] px-3 py-1 rounded-full">
+              Best Seller
+            </div>
+          )}
+          <img
+            src={product.image}
+            alt={product.name}
+            className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+            referrerPolicy="no-referrer"
+          />
         </div>
-        <IngredientTicker desc={product.desc} />
+        <div className="px-2 text-center flex flex-col flex-1 min-w-0">
+          <h4 className="text-base sm:text-xl font-semibold tracking-tight text-[#1D1C1A] font-display whitespace-nowrap overflow-hidden text-ellipsis">
+            {product.name}
+          </h4>
+          <div className="flex items-baseline justify-center gap-3 mt-2">
+            <span className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-[#6F6A63] border border-black/10 rounded-full min-w-[72px] h-6 px-2 flex items-center justify-center">
+              25% Off
+            </span>
+            <span className="text-[11px] sm:text-sm text-[#A7A29C] line-through font-medium">
+              {"\u20B9"}{product.mrp ?? product.price ?? 0}
+            </span>
+            <span className="text-sm sm:text-lg font-semibold text-[#1D1C1A]">
+              {"\u20B9"}{product.offerPrice ?? product.price ?? 0}
+            </span>
+          </div>
+          <IngredientTicker desc={product.desc} />
+        </div>
+      </button>
+      <div className="mt-3 flex items-center justify-center gap-3">
+        <button
+          type="button"
+          onClick={() => onDecrement(product)}
+          disabled={qty <= 0}
+          className="h-8 w-8 rounded-full border-2 border-[#1D1C1A] text-sm font-semibold text-[#1D1C1A] disabled:opacity-40 disabled:cursor-not-allowed"
+          aria-label={`Decrease ${product.name}`}
+        >
+          -
+        </button>
+        <span className="text-sm font-semibold text-[#1D1C1A] w-6 text-center">{qty}</span>
+        <button
+          type="button"
+          onClick={() => onIncrement(product)}
+          className="h-8 w-8 rounded-full border-2 border-[#1D1C1A] bg-[#1D1C1A] text-sm font-semibold text-white"
+          aria-label={`Increase ${product.name}`}
+        >
+          +
+        </button>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -228,17 +256,17 @@ function ProductPanel({
             onClick={onClose}
           />
           <motion.div
-            className="fixed z-[90] bg-[#F7F5F0] left-1/2 top-1/2 w-[92vw] max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-[2.5rem] overflow-hidden shadow-[0_50px_140px_-80px_rgba(0,0,0,0.6)] border border-black/10"
+            className="fixed z-[90] bg-[#F7F5F0] left-1/2 top-1/2 w-[94vw] sm:w-[92vw] max-w-2xl h-[92vh] sm:h-[90vh] max-h-[92vh] -translate-x-1/2 -translate-y-1/2 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden shadow-[0_50px_140px_-80px_rgba(0,0,0,0.6)] border border-black/10"
             variants={panelVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="relative overflow-hidden">
+            <div className="relative h-full overflow-hidden">
               <div className="absolute inset-0 bg-white pointer-events-none" />
               <div
-                className="absolute inset-0 pointer-events-none opacity-30"
+                className="absolute inset-0 pointer-events-none opacity-100"
                 style={{
                   backgroundImage: `url(${product.image})`,
                   backgroundRepeat: "no-repeat",
@@ -246,69 +274,85 @@ function ProductPanel({
                   backgroundSize: "cover"
                 }}
               />
-              <div className="relative z-10 p-5 sm:p-8 backdrop-blur-[1px]">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-[10px] uppercase tracking-[0.3em] text-[#1D1C1A] font-semibold">Product Details</div>
-                  <button onClick={onClose} className="p-2 rounded-full border border-black/10 hover:border-black/20">
-                    <X size={16} />
-                  </button>
-                </div>
-                <div className="h-40 sm:h-56" />
-
-                <div className="mb-6">
-                  <h3 className="text-2xl font-bold text-[#1D1C1A] font-display">{product.name}</h3>
-                  <p className="text-sm text-[#1D1C1A] mt-2 font-medium">{product.tagline}</p>
-                  <div className="mt-4 flex items-center gap-3">
-                    <span className="text-[10px] uppercase tracking-[0.2em] text-[#1D1C1A] font-semibold">Sweetness</span>
-                    <SweetnessScale value={product.sweetness} />
+              <div className="relative z-10 flex h-full flex-col p-4 sm:p-8">
+                <div className="sticky top-0 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-[#F7F5F0]/95 backdrop-blur-sm border-b border-black/10">
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center rounded-full border border-black/10 bg-white/90 px-4 py-1.5 text-[9px] sm:text-[10px] uppercase tracking-[0.35em] text-[#1D1C1A] font-semibold">
+                      Product Details
+                    </span>
+                    <button onClick={onClose} className="h-9 w-9 flex items-center justify-center rounded-full border border-black/10 hover:border-black/20 bg-white/90">
+                      <X size={16} />
+                    </button>
                   </div>
                 </div>
+                <div className="flex-1 min-h-0 overflow-y-auto pr-1 pb-6 sm:pb-8">
+                  <div className="h-20 sm:h-40" />
 
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="rounded-2xl border-2 border-[#1D1C1A] p-4 bg-white/80">
-                    <div className="text-[10px] uppercase tracking-[0.2em] text-[#1D1C1A] mb-2 font-semibold">Calories</div>
-                    <div className="text-lg font-bold text-[#1D1C1A]">{product.nutrition.calories} kcal</div>
+                  <div className="mb-5 sm:mb-7">
+                    <h3 className="text-xl sm:text-3xl font-bold text-[#1D1C1A] font-display tracking-tight">{product.name}</h3>
+                    <p className="text-xs sm:text-sm text-[#1D1C1A]/90 mt-2 font-medium">{product.tagline}</p>
+                    <div className="mt-3 sm:mt-4 flex items-center gap-3">
+                      <span className="text-[9px] uppercase tracking-[0.35em] text-[#1D1C1A]/70 font-semibold">Sweetness</span>
+                      <SweetnessScale value={product.sweetness} />
+                    </div>
                   </div>
-                  <div className="rounded-2xl border-2 border-[#1D1C1A] p-4 bg-white/80">
-                    <div className="text-[10px] uppercase tracking-[0.2em] text-[#1D1C1A] mb-2 font-semibold">Vitamin</div>
-                    <div className="text-lg font-bold text-[#1D1C1A]">{product.nutrition.vitamin}</div>
+
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-5 sm:mb-7">
+                    <div className="rounded-[2rem] border border-black/20 bg-white/80 px-4 py-3 sm:py-4">
+                      <div className="text-[9px] uppercase tracking-[0.35em] text-[#1D1C1A]/70 mb-2 font-semibold">Calories</div>
+                      <div className="text-base sm:text-lg font-bold text-[#1D1C1A]">{product.nutrition.calories} kcal</div>
+                    </div>
+                    <div className="rounded-[2rem] border border-black/20 bg-white/80 px-4 py-3 sm:py-4">
+                      <div className="text-[9px] uppercase tracking-[0.35em] text-[#1D1C1A]/70 mb-2 font-semibold">Vitamin</div>
+                      <div className="text-base sm:text-lg font-bold text-[#1D1C1A]">{product.nutrition.vitamin}</div>
+                    </div>
+                    <div className="rounded-[2rem] border border-black/20 bg-white/80 px-4 py-3 sm:py-4">
+                      <div className="text-[9px] uppercase tracking-[0.35em] text-[#1D1C1A]/70 mb-2 font-semibold">Preservatives</div>
+                      <div className="text-base sm:text-lg font-bold text-[#1D1C1A]">{product.nutrition.preservatives}</div>
+                    </div>
+                    <div className="rounded-[2rem] border border-black/20 bg-white/80 px-4 py-3 sm:py-4">
+                      <div className="text-[9px] uppercase tracking-[0.35em] text-[#1D1C1A]/70 mb-2 font-semibold">Cold Pressed</div>
+                      <div className="text-base sm:text-lg font-bold text-[#1D1C1A]">Yes</div>
+                    </div>
                   </div>
-                  <div className="rounded-2xl border-2 border-[#1D1C1A] p-4 bg-white/80">
-                    <div className="text-[10px] uppercase tracking-[0.2em] text-[#1D1C1A] mb-2 font-semibold">Preservatives</div>
-                    <div className="text-lg font-bold text-[#1D1C1A]">{product.nutrition.preservatives}</div>
+
+                  <div className="mb-5 sm:mb-7">
+                    <div className="text-[9px] uppercase tracking-[0.35em] text-[#1D1C1A]/70 mb-3 font-semibold">Health Benefits</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {product.benefits.map((benefit) => (
+                        <div key={benefit} className="flex items-start gap-2 text-xs sm:text-sm text-[#1D1C1A] font-semibold">
+                          <span className="mt-1 h-2 w-2 rounded-full bg-[#1D1C1A]" />
+                          <span>{benefit}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="rounded-2xl border-2 border-[#1D1C1A] p-4 bg-white/80">
-                    <div className="text-[10px] uppercase tracking-[0.2em] text-[#1D1C1A] mb-2 font-semibold">Cold Pressed</div>
-                    <div className="text-lg font-bold text-[#1D1C1A]">Yes</div>
+
+                  <div className="mb-5 sm:mb-7">
+                    <div className="text-[9px] uppercase tracking-[0.35em] text-[#1D1C1A]/70 mb-3 font-semibold">Ingredients</div>
+                    <div className="flex flex-wrap gap-2">
+                      {product.ingredients.map((ingredient) => (
+                        <span
+                          key={ingredient}
+                          className="rounded-full border border-black/10 bg-white/80 px-3 py-1 text-[11px] sm:text-xs font-semibold text-[#1D1C1A]"
+                        >
+                          {ingredient}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mb-5 sm:mb-7 rounded-2xl border border-black/10 bg-[#F9F6F0]/95 px-4 py-3 text-left">
+                    <div className="text-sm sm:text-base font-bold text-[#1D1C1A]">
+                      No artificial sweeteners or sugar added.
+                    </div>
+                    <div className="mt-2 text-xs sm:text-sm font-semibold text-[#1D1C1A]/80">
+                      Serving size: 200 ml • Keep refrigerated • Best served chilled
+                    </div>
                   </div>
                 </div>
 
-                <div className="mb-6">
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-[#1D1C1A] mb-3 font-semibold">Health Benefits</div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {product.benefits.map((benefit) => (
-                      <div key={benefit} className="flex items-center gap-2 text-sm text-[#1D1C1A] font-semibold">
-                        <span className="h-2 w-2 rounded-full bg-[#1D1C1A]" />
-                        {benefit}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mb-6">
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-[#1D1C1A] mb-3 font-semibold">Ingredients</div>
-                  <div className="text-sm text-[#1D1C1A] font-semibold">
-                    {product.ingredients.join(" \u2022 ")}
-                  </div>
-                </div>
-
-                <div className="mb-6 rounded-2xl border border-black/5 bg-[#F9F6F0] px-4 py-4 text-left">
-                  <div className="text-base font-bold text-[#1D1C1A]">
-                    No artificial sweeteners or sugar added.
-                  </div>
-                </div>
-
-                <div className="border-t border-black/10 pt-5 flex items-center justify-between gap-4">
+                <div className="sticky bottom-0 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 border-t border-black/10 pt-4 pb-3 flex items-center justify-between gap-4 shrink-0 bg-[#F7F5F0]/95 backdrop-blur-sm">
                   <div className="text-2xl font-semibold text-[#1D1D1F]">{"\u20B9"}{product.offerPrice ?? product.price ?? 0}</div>
                   <button
                     onClick={() => onAdd(product)}
@@ -421,6 +465,29 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
     return roundUpTo9(rawOffer);
   };
 
+  const adjustCartQty = (id: string, delta: number) => {
+    setCartItems((prev) => {
+      const current = prev[id] ?? 0;
+      const nextQty = Math.max(0, current + delta);
+      const next = { ...prev };
+      if (nextQty === 0) {
+        delete next[id];
+      } else {
+        next[id] = nextQty;
+      }
+      setCart(next);
+      return next;
+    });
+  };
+
+  const handleIncrement = (product: ProductData) => {
+    adjustCartQty(product.id, 1);
+  };
+
+  const handleDecrement = (product: ProductData) => {
+    adjustCartQty(product.id, -1);
+  };
+
   const openPanel = (product: ProductData) => {
     setSelectedProduct(product);
     setIsPanelOpen(true);
@@ -474,7 +541,13 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
           viewport={{ once: true, margin: "-50px" }}
           transition={{ duration: 0.8, delay: index * 0.04, ease: [0.16, 1, 0.3, 1] }}
         >
-          <MenuCard product={item} onClick={openPanel} />
+          <MenuCard
+            product={item}
+            onClick={openPanel}
+            onIncrement={handleIncrement}
+            onDecrement={handleDecrement}
+            qty={cartItems[item.id] ?? 0}
+          />
         </motion.div>
       ))}
     </div>
