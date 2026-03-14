@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+﻿﻿import { useEffect, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction, CSSProperties } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { get, onValue, ref } from 'firebase/database';
@@ -180,25 +180,36 @@ function MenuCard({
           <IngredientTicker desc={product.desc} />
         </div>
       </button>
-      <div className="mt-3 flex items-center justify-center gap-3">
-        <button
-          type="button"
-          onClick={() => onDecrement(product)}
-          disabled={qty <= 0}
-          className="h-8 w-8 rounded-full border-2 border-[#1D1C1A] text-sm font-semibold text-[#1D1C1A] disabled:opacity-40 disabled:cursor-not-allowed"
-          aria-label={`Decrease ${product.name}`}
-        >
-          -
-        </button>
-        <span className="text-sm font-semibold text-[#1D1C1A] w-6 text-center">{qty}</span>
-        <button
-          type="button"
-          onClick={() => onIncrement(product)}
-          className="h-8 w-8 rounded-full border-2 border-[#1D1C1A] bg-[#1D1C1A] text-sm font-semibold text-white"
-          aria-label={`Increase ${product.name}`}
-        >
-          +
-        </button>
+      <div className="mt-4 flex items-center justify-center h-9">
+        {qty > 0 ? (
+          <div className="flex items-center justify-center gap-4">
+            <button
+              type="button"
+              onClick={() => onDecrement(product)}
+              className="h-9 w-9 flex items-center justify-center rounded-full border-2 border-[#1D1C1A] text-base font-semibold text-[#1D1C1A] hover:bg-black/5 transition-colors"
+              aria-label={`Decrease ${product.name}`}
+            >
+              -
+            </button>
+            <span className="text-sm font-semibold text-[#1D1C1A] w-6 text-center">{qty}</span>
+            <button
+              type="button"
+              onClick={() => onIncrement(product)}
+              className="h-9 w-9 flex items-center justify-center rounded-full border-2 border-[#1D1C1A] bg-[#1D1C1A] text-base font-semibold text-white hover:bg-black transition-colors"
+              aria-label={`Increase ${product.name}`}
+            >
+              +
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onIncrement(product)}
+            className="h-9 px-6 rounded-full border-2 border-[#1D1C1A] text-[11px] font-bold tracking-[0.15em] uppercase text-[#1D1C1A] hover:bg-[#1D1C1A] hover:text-white transition-colors"
+          >
+            Add to Cart
+          </button>
+        )}
       </div>
     </div>
   );
@@ -227,20 +238,22 @@ function ProductPanel({
   product,
   isOpen,
   onClose,
-  onAdd,
-  isAdded
+  onIncrement,
+  onDecrement,
+  qty
 }: {
   product: ProductData | null;
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (product: ProductData) => void;
-  isAdded: boolean;
+  onIncrement: (product: ProductData) => void;
+  onDecrement: (product: ProductData) => void;
+  qty: number;
 }) {
   if (!product) return null;
   const panelVariants = {
-    hidden: { opacity: 0, scale: 0.96, y: 16 },
+    hidden: { opacity: 0, scale: 0.98, y: 20 },
     visible: { opacity: 1, scale: 1, y: 0 },
-    exit: { opacity: 0, scale: 0.98, y: 16 }
+    exit: { opacity: 0, scale: 0.98, y: 20 }
   };
 
   return (
@@ -248,120 +261,147 @@ function ProductPanel({
       {isOpen && (
         <>
           <motion.div
-            className="fixed inset-0 bg-black/40 backdrop-blur-md z-[80]"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[80]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            transition={{ duration: 0.3 }}
             onClick={onClose}
           />
           <motion.div
-            className="fixed z-[90] bg-[#F7F5F0] left-1/2 top-1/2 w-[94vw] sm:w-[92vw] max-w-2xl h-[92vh] sm:h-[90vh] max-h-[92vh] -translate-x-1/2 -translate-y-1/2 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden shadow-[0_50px_140px_-80px_rgba(0,0,0,0.6)] border border-black/10"
+            className="fixed z-[90] bg-white left-1/2 top-1/2 w-[95vw] sm:w-[90vw] max-w-4xl h-[90vh] sm:h-[85vh] -translate-x-1/2 -translate-y-1/2 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col sm:flex-row"
             variants={panelVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="relative h-full overflow-hidden">
-              <div className="absolute inset-0 bg-white pointer-events-none" />
-              <div
-                className="absolute inset-0 pointer-events-none opacity-100"
-                style={{
-                  backgroundImage: `url(${product.image})`,
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "center",
-                  backgroundSize: "cover"
-                }}
+            <div className="relative w-full h-[35%] min-h-[200px] sm:h-full sm:w-1/2 shrink-0 bg-[#F7F5F0]">
+              <img
+                src={product.image}
+                alt={product.name}
+                className="w-full h-full object-cover"
               />
-              <div className="relative z-10 flex h-full flex-col p-4 sm:p-8">
-                <div className="sticky top-0 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-[#F7F5F0]/95 backdrop-blur-sm border-b border-black/10">
-                  <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center rounded-full border border-black/10 bg-white/90 px-4 py-1.5 text-[9px] sm:text-[10px] uppercase tracking-[0.35em] text-[#1D1C1A] font-semibold">
-                      Product Details
+              <button 
+                onClick={onClose} 
+                className="absolute top-4 left-4 sm:hidden h-10 w-10 flex items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur-md z-10 text-[#1D1C1A]"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="flex-1 flex flex-col min-h-0 relative bg-white w-full sm:w-1/2">
+              <div className="hidden sm:flex absolute top-6 right-6 z-10">
+                <button 
+                  onClick={onClose} 
+                  className="h-10 w-10 flex items-center justify-center rounded-full bg-[#F7F5F0] hover:bg-gray-200 transition-colors text-[#1D1C1A]"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-5 sm:p-10 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scroll-smooth">
+                <div className="mb-6 sm:pr-10">
+                  <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                    <span className="inline-block px-3 py-1 text-[9px] sm:text-[10px] uppercase tracking-[0.25em] font-bold text-[#1D1C1A] bg-[#F7F5F0] rounded-full">
+                      Cold Pressed
                     </span>
-                    <button onClick={onClose} className="h-9 w-9 flex items-center justify-center rounded-full border border-black/10 hover:border-black/20 bg-white/90">
-                      <X size={16} />
+                    <span className="inline-block px-3 py-1 text-[9px] sm:text-[10px] uppercase tracking-[0.25em] font-bold text-white bg-[#1D1C1A] rounded-full">
+                      25% Off
+                    </span>
+                  </div>
+                  <h3 className="text-3xl sm:text-4xl font-bold text-[#1D1C1A] tracking-tight font-display mb-2">
+                    {product.name}
+                  </h3>
+                  <p className="text-sm text-gray-500 font-medium">
+                    {product.tagline}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-8">
+                  <div className="bg-[#F7F5F0] rounded-2xl p-4 sm:p-5">
+                    <div className="text-[9px] uppercase tracking-[0.2em] font-bold text-gray-400 mb-1">Calories</div>
+                    <div className="text-lg sm:text-xl font-bold text-[#1D1C1A]">{product.nutrition.calories} kcal</div>
+                  </div>
+                  <div className="bg-[#F7F5F0] rounded-2xl p-4 sm:p-5">
+                    <div className="text-[9px] uppercase tracking-[0.2em] font-bold text-gray-400 mb-1">Vitamin</div>
+                    <div className="text-lg sm:text-xl font-bold text-[#1D1C1A]">{product.nutrition.vitamin}</div>
+                  </div>
+                </div>
+
+                <div className="mb-8">
+                  <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400 mb-4">
+                    Ingredients
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {product.ingredients.map(ing => (
+                      <span key={ing} className="px-4 py-2 bg-white border border-gray-200 rounded-full text-xs font-semibold text-[#1D1C1A]">
+                        {ing}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mb-8">
+                  <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400 mb-4">
+                    Benefits
+                  </h4>
+                  <ul className="space-y-3">
+                    {product.benefits.map((benefit, idx) => (
+                      <li key={idx} className="flex items-center gap-3 text-sm font-semibold text-[#1D1C1A]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#1D1C1A]" />
+                        {benefit}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="flex items-center gap-4 p-4 sm:p-5 bg-[#F7F5F0] rounded-2xl mb-4">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sweetness</span>
+                  <SweetnessScale value={product.sweetness} />
+                </div>
+              </div>
+
+              <div className="shrink-0 p-4 sm:px-10 sm:py-6 bg-white border-t border-gray-100 flex items-center justify-between gap-4 z-10">
+                <div>
+                  <div className="text-[9px] uppercase tracking-[0.2em] font-bold text-gray-400 mb-1">Total Price</div>
+                  <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
+                    <div className="text-xl sm:text-3xl font-bold text-[#1D1C1A]">
+                      {"\u20B9"}{product.offerPrice ?? product.price ?? 0}
+                    </div>
+                    {product.mrp && (
+                      <div className="text-xs sm:text-sm text-gray-400 line-through font-medium mt-0.5 sm:mt-0">
+                        {"\u20B9"}{product.mrp}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  {qty > 0 ? (
+                    <div className="flex items-center justify-center gap-4">
+                      <button
+                        onClick={() => onDecrement(product)}
+                        className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 rounded-full border-2 border-[#1D1C1A] text-lg font-semibold text-[#1D1C1A] flex items-center justify-center hover:bg-black/5 transition-colors"
+                      >
+                        -
+                      </button>
+                      <span className="text-base sm:text-lg font-bold w-4 sm:w-6 text-center text-[#1D1C1A]">{qty}</span>
+                      <button
+                        onClick={() => onIncrement(product)}
+                        className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 rounded-full border-2 border-[#1D1C1A] bg-[#1D1C1A] text-lg font-semibold text-white flex items-center justify-center hover:bg-black transition-colors"
+                      >
+                        +
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => onIncrement(product)}
+                      className="px-5 py-3.5 sm:px-8 sm:py-4 bg-[#1D1C1A] text-white rounded-full text-[10px] sm:text-xs font-bold tracking-[0.15em] uppercase hover:bg-black transition-colors whitespace-nowrap"
+                    >
+                      Add to Cart
                     </button>
-                  </div>
-                </div>
-                <div className="flex-1 min-h-0 overflow-y-auto pr-1 pb-6 sm:pb-8">
-                  <div className="h-20 sm:h-40" />
-
-                  <div className="mb-5 sm:mb-7">
-                    <h3 className="text-xl sm:text-3xl font-bold text-[#1D1C1A] font-display tracking-tight">{product.name}</h3>
-                    <p className="text-xs sm:text-sm text-[#1D1C1A]/90 mt-2 font-medium">{product.tagline}</p>
-                    <div className="mt-3 sm:mt-4 flex items-center gap-3">
-                      <span className="text-[9px] uppercase tracking-[0.35em] text-[#1D1C1A]/70 font-semibold">Sweetness</span>
-                      <SweetnessScale value={product.sweetness} />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-5 sm:mb-7">
-                    <div className="rounded-[2rem] border border-black/20 bg-white/80 px-4 py-3 sm:py-4">
-                      <div className="text-[9px] uppercase tracking-[0.35em] text-[#1D1C1A]/70 mb-2 font-semibold">Calories</div>
-                      <div className="text-base sm:text-lg font-bold text-[#1D1C1A]">{product.nutrition.calories} kcal</div>
-                    </div>
-                    <div className="rounded-[2rem] border border-black/20 bg-white/80 px-4 py-3 sm:py-4">
-                      <div className="text-[9px] uppercase tracking-[0.35em] text-[#1D1C1A]/70 mb-2 font-semibold">Vitamin</div>
-                      <div className="text-base sm:text-lg font-bold text-[#1D1C1A]">{product.nutrition.vitamin}</div>
-                    </div>
-                    <div className="rounded-[2rem] border border-black/20 bg-white/80 px-4 py-3 sm:py-4">
-                      <div className="text-[9px] uppercase tracking-[0.35em] text-[#1D1C1A]/70 mb-2 font-semibold">Preservatives</div>
-                      <div className="text-base sm:text-lg font-bold text-[#1D1C1A]">{product.nutrition.preservatives}</div>
-                    </div>
-                    <div className="rounded-[2rem] border border-black/20 bg-white/80 px-4 py-3 sm:py-4">
-                      <div className="text-[9px] uppercase tracking-[0.35em] text-[#1D1C1A]/70 mb-2 font-semibold">Cold Pressed</div>
-                      <div className="text-base sm:text-lg font-bold text-[#1D1C1A]">Yes</div>
-                    </div>
-                  </div>
-
-                  <div className="mb-5 sm:mb-7">
-                    <div className="text-[9px] uppercase tracking-[0.35em] text-[#1D1C1A]/70 mb-3 font-semibold">Health Benefits</div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {product.benefits.map((benefit) => (
-                        <div key={benefit} className="flex items-start gap-2 text-xs sm:text-sm text-[#1D1C1A] font-semibold">
-                          <span className="mt-1 h-2 w-2 rounded-full bg-[#1D1C1A]" />
-                          <span>{benefit}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="mb-5 sm:mb-7">
-                    <div className="text-[9px] uppercase tracking-[0.35em] text-[#1D1C1A]/70 mb-3 font-semibold">Ingredients</div>
-                    <div className="flex flex-wrap gap-2">
-                      {product.ingredients.map((ingredient) => (
-                        <span
-                          key={ingredient}
-                          className="rounded-full border border-black/10 bg-white/80 px-3 py-1 text-[11px] sm:text-xs font-semibold text-[#1D1C1A]"
-                        >
-                          {ingredient}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="mb-5 sm:mb-7 rounded-2xl border border-black/10 bg-[#F9F6F0]/95 px-4 py-3 text-left">
-                    <div className="text-sm sm:text-base font-bold text-[#1D1C1A]">
-                      No artificial sweeteners or sugar added.
-                    </div>
-                    <div className="mt-2 text-xs sm:text-sm font-semibold text-[#1D1C1A]/80">
-                      Serving size: 200 ml • Keep refrigerated • Best served chilled
-                    </div>
-                  </div>
-                </div>
-
-                <div className="sticky bottom-0 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 border-t border-black/10 pt-4 pb-3 flex items-center justify-between gap-4 shrink-0 bg-[#F7F5F0]/95 backdrop-blur-sm">
-                  <div className="text-2xl font-semibold text-[#1D1D1F]">{"\u20B9"}{product.offerPrice ?? product.price ?? 0}</div>
-                  <button
-                    onClick={() => onAdd(product)}
-                    className={`px-6 py-3 rounded-full text-[11px] font-semibold tracking-[0.2em] uppercase transition-colors ${
-                      isAdded ? "bg-[#1D1C1A] text-white" : "bg-[#1D1C1A] text-white hover:bg-black"
-                    }`}
-                  >
-                    {isAdded ? "Added" : "Add to Cart"}
-                  </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -379,7 +419,6 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
   const [selectedProduct, setSelectedProduct] = useState<ProductData | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [cartItems, setCartItems] = useState<Record<string, number>>(cart);
-  const [addedId, setAddedId] = useState<string | null>(null);
 
   useEffect(() => {
     setCartItems(cart);
@@ -493,17 +532,6 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
     setIsPanelOpen(true);
   };
 
-  const handleAddToCart = (product: ProductData) => {
-    const id = product.id;
-    setCartItems((prev) => {
-      const next = prev[id] ? prev : { ...prev, [id]: 1 };
-      setCart(next);
-      return next;
-    });
-    setAddedId(id);
-    window.setTimeout(() => setAddedId(null), 1500);
-    setIsPanelOpen(false);
-  };
 
   const products = menuItems.map((item, index) =>
     buildProduct(
@@ -605,11 +633,10 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
         product={selectedProduct}
         isOpen={isPanelOpen}
         onClose={() => setIsPanelOpen(false)}
-        onAdd={handleAddToCart}
-        isAdded={Boolean(selectedProduct && addedId === selectedProduct.id)}
+        onIncrement={handleIncrement}
+        onDecrement={handleDecrement}
+        qty={selectedProduct ? (cartItems[selectedProduct.id] ?? 0) : 0}
       />
     </section>
   );
 }
-
-
