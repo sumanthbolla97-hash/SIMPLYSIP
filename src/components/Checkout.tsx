@@ -54,8 +54,8 @@ const SUBSCRIPTION_ITEMS = [
   { 
     id: "sub_weekly", 
     name: "Weekly Subscription", 
-    mrp: 899, 
-    offerPrice: 699,
+    mrp: 999, 
+    offerPrice: 799,
     desc: "1 cold-pressed juice (200 ml) delivered daily for 7 days"
   },
   { 
@@ -63,7 +63,7 @@ const SUBSCRIPTION_ITEMS = [
     name: "Monthly Subscription", 
     mrp: 3599, 
     offerPrice: 2599,
-    desc: "1 cold-pressed juice (200 ml) delivered daily for 28 days"
+    desc: "1 cold-pressed juice (200 ml) delivered daily for 30 days"
   }
 ];
 
@@ -202,6 +202,11 @@ export default function Checkout({ user, onBack, cart, menuItems, onClearCart, o
     const qty = cart[item.id] ?? 0;
     return sum + (getOfferPrice(item) * qty);
   }, 0);
+  const cartMrpTotal = cartItems.reduce((sum, item) => {
+    const qty = cart[item.id] ?? 0;
+    return sum + (getMrp(item) * qty);
+  }, 0);
+  const totalSavings = cartMrpTotal > cartTotal ? cartMrpTotal - cartTotal : 0;
   const deliveryFee = cartTotal >= 250 ? 0 : (cartCount > 0 ? 30 : 0);
   const grandTotal = cartTotal + deliveryFee;
 
@@ -477,6 +482,12 @@ export default function Checkout({ user, onBack, cart, menuItems, onClearCart, o
                       <span>Subtotal</span>
                       <span className="text-sm font-semibold text-[#1A1A1A]">{rupee}{cartTotal}</span>
                     </div>
+                    {totalSavings > 0 && (
+                      <div className="flex items-center justify-between text-xs font-semibold tracking-[0.2em] uppercase text-green-600">
+                        <span>Total Savings</span>
+                        <span className="text-sm font-semibold">-{rupee}{totalSavings}</span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between text-xs font-semibold tracking-[0.2em] uppercase text-gray-500">
                       <span>Delivery</span>
                       <span className="text-sm font-semibold text-[#1A1A1A]">

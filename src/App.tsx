@@ -37,7 +37,7 @@ export default function App() {
   const [isCartHydrated, setIsCartHydrated] = useState(false);
   const cartCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
   const subscriptionTotal =
-    (cart.sub_weekly ? 699 : 0) + (cart.sub_monthly ? 2599 : 0);
+    (cart.sub_weekly ? 799 : 0) + (cart.sub_monthly ? 2599 : 0);
   const combinedTotal = menuTotal + subscriptionTotal;
 
   const handleSubscription = (plan: "weekly" | "monthly") => {
@@ -374,7 +374,10 @@ export default function App() {
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="text-sm uppercase tracking-[0.3em] text-[#6F6A63] mb-1">Weekly Plan</div>
-                          <div className="text-lg font-semibold text-[#1D1C1A] font-display">{"\u20B9"}699 / week</div>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-sm text-[#A7A29C] line-through font-medium">{"\u20B9"}999</span>
+                            <span className="text-lg font-semibold text-[#1D1C1A] font-display">{"\u20B9"}799 / week</span>
+                          </div>
                           <div className="text-xs text-[#6F6A63]">7 cold-pressed juices (200 ml each)</div>
                         </div>
                         <span className="pointer-events-none inline-flex items-center justify-center min-w-[140px] px-5 sm:px-6 py-2.5 bg-[#1D1C1A] text-white rounded-full font-semibold tracking-[0.2em] uppercase text-[10px]">
@@ -389,9 +392,15 @@ export default function App() {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-sm uppercase tracking-[0.3em] text-[#6F6A63] mb-1">Monthly Plan</div>
-                          <div className="text-lg font-semibold text-[#1D1C1A] font-display">{"\u20B9"}2599 / month</div>
-                          <div className="text-xs text-[#6F6A63]">One cold-pressed juice a day for the month</div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm uppercase tracking-[0.3em] text-[#6F6A63]">Monthly Plan</span>
+                            <span className="bg-[#1D1C1A] text-white px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-[0.2em]">Best Value</span>
+                          </div>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-sm text-[#A7A29C] line-through font-medium">{"\u20B9"}3599</span>
+                            <span className="text-lg font-semibold text-[#1D1C1A] font-display">{"\u20B9"}2599 / month</span>
+                          </div>
+                          <div className="text-xs text-[#6F6A63]">30 cold-pressed juices (200 ml each)</div>
                         </div>
                         <span className="pointer-events-none inline-flex items-center justify-center min-w-[140px] px-5 sm:px-6 py-2.5 bg-[#1D1C1A] text-white rounded-full font-semibold tracking-[0.2em] uppercase text-[10px]">
                           Subscribe Now

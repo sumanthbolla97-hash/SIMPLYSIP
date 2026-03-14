@@ -475,7 +475,7 @@ export default function Menu({ cart, menuItems, setCart, onCheckout, onCartTotal
     return sum + (getOfferPrice(item) * qty);
   }, 0);
   const subscriptionTotal =
-    (cartItems.sub_weekly ? 699 : 0) + (cartItems.sub_monthly ? 2599 : 0);
+    (cartItems.sub_weekly ? 799 : 0) + (cartItems.sub_monthly ? 2599 : 0);
   const combinedTotal = cartTotal + subscriptionTotal;
 
   useEffect(() => {

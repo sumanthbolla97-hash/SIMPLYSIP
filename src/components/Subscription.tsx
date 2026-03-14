@@ -15,8 +15,8 @@ export default function Subscription({ onSubscribe, selectedPlan, onPlanChange }
       label: "Weekly Plan",
       title: "Weekly Detox Plan",
       count: "7 cold-pressed juices (200 ml each)",
-      mrp: 899,
-      price: 699,
+      mrp: 999,
+      price: 799,
       cadence: "/ week",
       perBottle: "",
       cta: "Start Weekly"
@@ -24,7 +24,7 @@ export default function Subscription({ onSubscribe, selectedPlan, onPlanChange }
     monthly: {
       label: "Monthly Plan",
       title: "Monthly Cleanse Plan",
-      count: "28 cold-pressed juices (200 ml each)",
+      count: "30 cold-pressed juices (200 ml each)",
       mrp: 3599,
       price: 2599,
       cadence: "/ month",

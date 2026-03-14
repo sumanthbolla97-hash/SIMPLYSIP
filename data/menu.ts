@@ -20,9 +20,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "Hulk Greens",
     desc: `Green Apple ${BULLET} Cucumber ${BULLET} Ginger ${BULLET} Spinach ${BULLET} Lime`,
     image: "/images/hulk-greens.png",
-    price: 129,
-    mrp: 170,
-    offerPrice: 129
+    price: 119,
+    mrp: 159,
+    offerPrice: 119
   },
   {
     id: "2",
@@ -31,9 +31,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "Melon Booster",
     desc: `Watermelon ${BULLET} Cucumber ${BULLET} Mint`,
     image: "/images/melon-booster.png",
-    price: 119,
-    mrp: 150,
-    offerPrice: 119
+    price: 89,
+    mrp: 119,
+    offerPrice: 89
   },
   {
     id: "3",
@@ -42,9 +42,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "ABC",
     desc: `Apple ${BULLET} Beetroot ${BULLET} Carrot`,
     image: "/images/abc.png",
-    price: 119,
-    mrp: 160,
-    offerPrice: 119
+    price: 109,
+    mrp: 149,
+    offerPrice: 109
   },
   {
     id: "4",
@@ -53,9 +53,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "A-Star",
     desc: `Apple ${BULLET} Pomegranate`,
     image: "/images/a-star.png",
-    price: 129,
-    mrp: 170,
-    offerPrice: 129
+    price: 119,
+    mrp: 159,
+    offerPrice: 119
   },
   {
     id: "5",
@@ -65,7 +65,7 @@ export const createSeedMenu = (): MenuItem[] => [
     desc: `Apple ${BULLET} Mint ${BULLET} Ginger`,
     image: "/images/amg.png",
     price: 119,
-    mrp: 160,
+    mrp: 159,
     offerPrice: 119
   },
   {
@@ -75,9 +75,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "Ganga Jamuna",
     desc: `Orange ${BULLET} Mosambi`,
     image: "/images/ganga-jamuna.png",
-    price: 119,
-    mrp: 150,
-    offerPrice: 119
+    price: 109,
+    mrp: 149,
+    offerPrice: 109
   },
   {
     id: "7",
@@ -86,9 +86,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "Coco Fresh",
     desc: "Tender Coconut Water",
     image: "/images/coco-fresh.png",
-    price: 129,
-    mrp: 170,
-    offerPrice: 129
+    price: 119,
+    mrp: 159,
+    offerPrice: 119
   },
   {
     id: "8",
@@ -97,9 +97,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "Sunshine Sip",
     desc: "Mosambi",
     image: "/images/sunshine-sip.png",
-    price: 119,
-    mrp: 150,
-    offerPrice: 119
+    price: 109,
+    mrp: 149,
+    offerPrice: 109
   },
   {
     id: "9",
@@ -109,7 +109,7 @@ export const createSeedMenu = (): MenuItem[] => [
     desc: "Orange",
     image: "/images/golden-sunrise.png",
     price: 119,
-    mrp: 150,
+    mrp: 159,
     offerPrice: 119
   },
   {
@@ -119,9 +119,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "Orchard Gold",
     desc: "Apple",
     image: "/images/orchard-gold.png",
-    price: 119,
-    mrp: 160,
-    offerPrice: 119
+    price: 129,
+    mrp: 179,
+    offerPrice: 129
   },
   {
     id: "11",
@@ -131,7 +131,7 @@ export const createSeedMenu = (): MenuItem[] => [
     desc: "Pineapple",
     image: "/images/tropical-bliss.png",
     price: 119,
-    mrp: 160,
+    mrp: 159,
     offerPrice: 119
   },
   {
@@ -141,9 +141,9 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "Velvet Vine",
     desc: "Pomegranate",
     image: "/images/velvet-vine.png",
-    price: 129,
-    mrp: 170,
-    offerPrice: 129
+    price: 149,
+    mrp: 199,
+    offerPrice: 149
   },
   {
     id: "13",
@@ -153,7 +153,7 @@ export const createSeedMenu = (): MenuItem[] => [
     desc: "Black Grapes",
     image: "/images/purple-crush.png",
     price: 129,
-    mrp: 170,
+    mrp: 179,
     offerPrice: 129
   },
   {
@@ -164,7 +164,7 @@ export const createSeedMenu = (): MenuItem[] => [
     desc: "Green Grapes",
     image: "/images/verjus.png",
     price: 129,
-    mrp: 170,
+    mrp: 179,
     offerPrice: 129
   },
   {
@@ -174,8 +174,8 @@ export const createSeedMenu = (): MenuItem[] => [
     name: "Garden Joy",
     desc: "Carrot",
     image: "/images/garden-joy.png",
-    price: 109,
-    mrp: 140,
-    offerPrice: 109
+    price: 89,
+    mrp: 119,
+    offerPrice: 89
   }
 ];
