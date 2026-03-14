@@ -373,24 +373,27 @@ export default function ProfilePanel({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <motion.div
-        initial={{ opacity: 0, x: '100%' }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: '100%' }}
-        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="fixed top-0 right-0 z-[80] w-full max-w-md h-full bg-white shadow-2xl flex flex-col"
-      >
+      {isOpen && (
+        <motion.div
+          key="profile-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm"
+          onClick={onClose}
+        />
+      )}
+      {isOpen && (
+        <motion.div
+          key="profile-panel"
+          initial={{ opacity: 0, x: '100%' }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: '100%' }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="fixed top-0 right-0 z-[80] w-full max-w-md h-full bg-white shadow-2xl flex flex-col"
+        >
         <div className="flex items-center justify-between p-6 border-b border-black/10 shrink-0">
           <div>
             <h2 className="text-lg font-semibold text-[#1D1C1A]">{user?.displayName || 'My Account'}</h2>
@@ -542,7 +545,8 @@ export default function ProfilePanel({
             Logout
           </button>
         </div>
-      </motion.div>
+        </motion.div>
+      )}
     </AnimatePresence>
   );
 }

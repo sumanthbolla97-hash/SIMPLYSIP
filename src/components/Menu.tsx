@@ -238,23 +238,26 @@ function ProductPanel({
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
-          <motion.div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[80]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            onClick={onClose}
-          />
-          <motion.div
-            className="fixed z-[90] bg-white left-1/2 top-1/2 w-[95vw] sm:w-[90vw] max-w-4xl h-[90vh] sm:h-[85vh] -translate-x-1/2 -translate-y-1/2 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col sm:flex-row"
-            variants={panelVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          >
+        <motion.div
+          key="product-backdrop"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[80]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          onClick={onClose}
+        />
+      )}
+      {isOpen && (
+        <motion.div
+          key="product-panel"
+          className="fixed z-[90] bg-white left-1/2 top-1/2 w-[95vw] sm:w-[90vw] max-w-4xl h-[90vh] sm:h-[85vh] -translate-x-1/2 -translate-y-1/2 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col sm:flex-row"
+          variants={panelVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        >
             <div className="relative w-full h-[35%] min-h-[200px] sm:h-full sm:w-1/2 shrink-0 bg-[#F7F5F0]">
               <img
                 src={product.image}
@@ -384,8 +387,7 @@ function ProductPanel({
                 </div>
               </div>
             </div>
-          </motion.div>
-        </>
+        </motion.div>
       )}
     </AnimatePresence>
   );
