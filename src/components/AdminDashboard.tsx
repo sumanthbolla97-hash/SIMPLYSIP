@@ -485,6 +485,21 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
+    const mrpNum = Number(mrp);
+    const offerPriceNum = Number(offerPrice);
+
+    if (mrpNum <= 0 || offerPriceNum <= 0) {
+      alert("MRP and Offer Price must be positive numbers.");
+      return;
+    }
+    if (offerPriceNum > mrpNum) {
+      alert("Offer Price cannot be greater than MRP.");
+      return;
+    }
+    if (!image.startsWith('http')) {
+      alert("Please enter a valid image URL starting with http(s)://");
+      return;
+    }
     try {
       const newRef = push(ref(db, "menu"));
       await set(newRef, {

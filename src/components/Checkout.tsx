@@ -3,16 +3,20 @@ import { motion } from 'motion/react';
 import { ArrowLeft, QrCode, Trash2 } from 'lucide-react';
 import { push, ref, set } from 'firebase/database';
 import { db } from '../firebaseConfig';
+import { Product, SubscriptionProduct, Order, UserProfile } from '../types';
+import { getMrp, getOfferPrice } from '../pricing';
 
 interface CheckoutProps {
-  user?: any;
+  user: UserProfile | null;
   onBack: () => void;
   cart: Record<string, number>;
+  menuItems: Product[];
   onClearCart: () => void;
   onRemoveItem: (id: string) => void;
   onIncrementItem: (id: string) => void;
   onDecrementItem: (id: string) => void;
   onAddressUpdate?: (addressData: any) => void;
+  onOrderPlaced?: (order: Order) => void;
 }
 
 const SERVICEABLE_ZONES = [
@@ -45,24 +49,6 @@ const SERVICEABLE_ZONES = [
 ];
 
 const BULLET = "\u2022";
-
-const FALLBACK_MENU = [
-  { id: "1", name: "Hulk Greens", desc: `Green Apple ${BULLET} Cucumber ${BULLET} Ginger ${BULLET} Spinach ${BULLET} Lime`, mrp: 170, offerPrice: 129, image: "/images/hulk-greens.png" },
-  { id: "2", name: "Melon Booster", desc: `Watermelon ${BULLET} Cucumber ${BULLET} Mint`, mrp: 150, offerPrice: 119, image: "/images/melon-booster.png" },
-  { id: "3", name: "ABC", desc: `Apple ${BULLET} Beetroot ${BULLET} Carrot`, mrp: 160, offerPrice: 119, image: "/images/abc.png" },
-  { id: "4", name: "A-Star", desc: `Apple ${BULLET} Pomegranate`, mrp: 170, offerPrice: 129, image: "/images/a-star.png" },
-  { id: "5", name: "AMG", desc: `Apple ${BULLET} Mint ${BULLET} Ginger`, mrp: 160, offerPrice: 119, image: "/images/amg.png" },
-  { id: "6", name: "Ganga Jamuna", desc: `Orange ${BULLET} Mosambi`, mrp: 150, offerPrice: 119, image: "/images/ganga-jamuna.png" },
-  { id: "7", name: "Coco Fresh", desc: "Tender Coconut Water", mrp: 170, offerPrice: 129, image: "/images/coco-fresh.png" },
-  { id: "8", name: "Sunshine Sip", desc: "Mosambi", mrp: 150, offerPrice: 119, image: "/images/sunshine-sip.png" },
-  { id: "9", name: "Golden Sunrise", desc: "Orange", mrp: 150, offerPrice: 119, image: "/images/golden-sunrise.png" },
-  { id: "10", name: "Orchard Gold", desc: "Apple", mrp: 160, offerPrice: 119, image: "/images/orchard-gold.png" },
-  { id: "11", name: "Tropical Bliss", desc: "Pineapple", mrp: 160, offerPrice: 119, image: "/images/tropical-bliss.png" },
-  { id: "12", name: "Velvet Vine", desc: "Pomegranate", mrp: 170, offerPrice: 129, image: "/images/velvet-vine.png" },
-  { id: "13", name: "Purple Crush", desc: "Black Grapes", mrp: 170, offerPrice: 129, image: "/images/purple-crush.png" },
-  { id: "14", name: "Verjus", desc: "Green Grapes", mrp: 170, offerPrice: 129, image: "/images/verjus.png" },
-  { id: "15", name: "Garden Joy", desc: "Carrot", mrp: 140, offerPrice: 109, image: "/images/garden-joy.png" }
-];
 
 const SUBSCRIPTION_ITEMS = [
   { 
@@ -111,10 +97,9 @@ function IngredientTicker({ desc }: { desc?: string }) {
   );
 }
 
-export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem, onIncrementItem, onDecrementItem, onAddressUpdate }: CheckoutProps) {
+export default function Checkout({ user, onBack, cart, menuItems, onClearCart, onRemoveItem, onIncrementItem, onDecrementItem, onAddressUpdate, onOrderPlaced }: CheckoutProps) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [orderId, setOrderId] = useState<string | null>(null);
-  const [menuItems, setMenuItems] = useState<any[]>([]);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const [formData, setFormData] = useState({
     name: user?.displayName || user?.name || '',
@@ -140,19 +125,6 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
     const hasSavedAddress = Boolean(nextForm.name && nextForm.phone && nextForm.address && nextForm.area);
     setIsAddressLocked(hasSavedAddress);
   }, [user]);
-
-  useEffect(() => {
-    fetch('/api/menu')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          setMenuItems(data);
-        } else {
-          setMenuItems(FALLBACK_MENU);
-        }
-      })
-      .catch(() => setMenuItems(FALLBACK_MENU));
-  }, []);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
@@ -223,44 +195,45 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
     }
   }, [user?.location]);
 
-  const roundUpTo9 = (value: number) => {
-    const base = Math.ceil(value);
-    const mod = base % 10;
-    return mod === 9 ? base : base + (9 - mod);
-  };
-
-  const getMrp = (item: any) => {
-    return Number(item.mrp ?? item.price ?? 0);
-  };
-
-  const getOffer = (item: any) => {
-    const mrp = getMrp(item);
-    const rawOffer = Number(item.offerPrice ?? (mrp * 0.75));
-    return roundUpTo9(rawOffer);
-  };
-
-  const allItems = [...SUBSCRIPTION_ITEMS, ...menuItems];
+  const allItems: (Product | SubscriptionProduct)[] = [...SUBSCRIPTION_ITEMS, ...menuItems];
   const cartItems = allItems.filter(item => cart[item.id]);
   const cartCount = cartItems.reduce((sum, item) => sum + (cart[item.id] ?? 0), 0);
   const cartTotal = cartItems.reduce((sum, item) => {
     const qty = cart[item.id] ?? 0;
-    return sum + (getOffer(item) * qty);
+    return sum + (getOfferPrice(item) * qty);
   }, 0);
   const deliveryFee = cartTotal >= 250 ? 0 : (cartCount > 0 ? 30 : 0);
   const grandTotal = cartTotal + deliveryFee;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === 'phone') {
+      // Allow only numbers and limit to 10 digits
+      const numericValue = value.replace(/[^0-9]/g, '');
+      if (numericValue.length <= 10) {
+        setFormData({ ...formData, [name]: numericValue });
+      }
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleSaveAddress = () => {
     if (!onAddressUpdate) {
-      alert("Please login to save your address.");
+      setIsAddressLocked(true);
       return;
     }
-    if (!formData.name.trim() || !formData.phone.trim() || !formData.address.trim() || !formData.area || formData.area === "Select Area") {
-      alert("Please fill all address fields before saving.");
-      return;
+    if (!formData.name.trim()) {
+      return alert("Please enter your full name.");
+    }
+    if (!/^\d{10}$/.test(formData.phone)) {
+      return alert("Please enter a valid 10-digit phone number.");
+    }
+    if (!formData.address.trim()) {
+      return alert("Please enter your complete address.");
+    }
+    if (!formData.area || formData.area === "Select Area") {
+      return alert("Please select a delivery area.");
     }
     onAddressUpdate({
       name: formData.name,
@@ -295,11 +268,17 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
       alert("Sorry, we currently only deliver to Cyberabad, Secunderabad, and Hyderabad.");
       return;
     }
-    if (formData.name && formData.phone && formData.address && formData.area && formData.area !== "Select Area") {
-      setStep(2);
-    } else {
-      alert("Please fill all fields.");
+    if (!formData.name.trim()) {
+      return alert("Please provide a name for delivery.");
     }
+    if (!/^\d{10}$/.test(formData.phone)) {
+      return alert("Please provide a valid 10-digit phone number for delivery.");
+    }
+    if (!formData.address.trim() || !formData.area || formData.area === "Select Area") {
+      return alert("Please provide a complete address and delivery area.");
+    }
+
+    setStep(2);
   };
 
   const handlePaymentDone = async () => {
@@ -307,7 +286,7 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
     const itemsText = cartItems
       .map((item) => {
         const desc = item.desc ? ` (${item.desc})` : "";
-        return `${item.name}${desc} x${cart[item.id]} - ${rupee}${getOffer(item)} each`;
+        return `${item.name}${desc} x${cart[item.id]} - ${rupee}${getOfferPrice(item)} each`;
       })
       .join("\n");
     const location = user?.location || 'N/A';
@@ -317,14 +296,14 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
     setStep(3);
     const newRef = push(ref(db, "orders"));
     const orderId = newRef.key;
-    void set(newRef, {
+    const orderData: Omit<Order, 'id'> = {
       userId: user?.uid || null,
       userEmail: user?.email || null,
       items: cartItems.map((item) => ({
         id: item.id,
         name: item.name,
         qty: cart[item.id] ?? 0,
-        price: getOffer(item)
+        price: getOfferPrice(item)
       })),
       subtotal: cartTotal,
       deliveryFee,
@@ -345,19 +324,24 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
       },
       location: user?.location || null,
       locationAccuracy: user?.locationAccuracy || null,
-      status: "pending",
       createdAt: Date.now()
-    })
-      .then(() => setOrderId(orderId))
+    };
+
+    void set(newRef, orderData)
+      .then(() => {
+        setOrderId(orderId);
+        if (onOrderPlaced) onOrderPlaced({ id: orderId, ...orderData });
+      })
       .catch((err) => console.error("Failed to save order:", err));
     onClearCart();
   };
 
   const handleOrderViaWhatsapp = () => {
+    const subscriptionType = cart.sub_weekly ? "weekly" : cart.sub_monthly ? "monthly" : null;
     const itemsText = cartItems
       .map((item) => {
         const desc = item.desc ? ` (${item.desc})` : "";
-        return `${item.name}${desc} x${cart[item.id]} - ${rupee}${getOffer(item)} each`;
+        return `${item.name}${desc} x${cart[item.id]} - ${rupee}${getOfferPrice(item)} each`;
       })
       .join("\n");
     const location = user?.location || 'N/A';
@@ -365,6 +349,51 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
     const message = `Hi Simply Sip, I placed an order.\n\nItems:\n${itemsText}\n\nSubtotal: ${rupee}${cartTotal}\nDelivery: ${rupee}${deliveryFee}\nTotal: ${rupee}${grandTotal}\n\nName: ${formData.name}\nAddress: ${formData.address}\nArea: ${formData.area}\nLocation: ${location}${accuracyText}\nOrder via WhatsApp.`;
     const whatsappUrl = `https://wa.me/917799934943?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
+
+    setOrderId(null);
+    setStep(3);
+    const newRef = push(ref(db, "orders"));
+    const orderId = newRef.key;
+    
+    const orderData: Omit<Order, 'id'> = {
+      userId: user?.uid || null,
+      userEmail: user?.email || null,
+      items: cartItems.map((item) => ({
+        id: item.id,
+        name: item.name,
+        qty: cart[item.id] ?? 0,
+        price: getOfferPrice(item)
+      })),
+      subtotal: cartTotal,
+      deliveryFee,
+      total: grandTotal,
+      subscriptionType,
+      paymentId: orderId,
+      paymentStatus: "unpaid",
+      orderStatus: "pending",
+      deliverySlot: "",
+      assignedRider: "",
+      notes: "Ordered via WhatsApp",
+      address: {
+        name: formData.name,
+        phone: formData.phone,
+        area: formData.area,
+        address: formData.address,
+        addressType: addressType
+      },
+      location: user?.location || null,
+      locationAccuracy: user?.locationAccuracy || null,
+      createdAt: Date.now()
+    };
+
+    void set(newRef, orderData)
+      .then(() => {
+        setOrderId(orderId);
+        if (onOrderPlaced) onOrderPlaced({ id: orderId, ...orderData });
+      })
+      .catch((err) => console.error("Failed to save order:", err));
+      
+    onClearCart();
   };
 
   return (
@@ -406,12 +435,12 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
                           <div className="text-base font-medium text-[#1A1A1A]">{item.name}</div>
                           <IngredientTicker desc={item.desc} />
                         </div>
-                        <div className="text-sm font-semibold text-[#1A1A1A] sm:pl-2 shrink-0">{rupee}{getOffer(item) * cart[item.id]}</div>
+                        <div className="text-sm font-semibold text-[#1A1A1A] sm:pl-2 shrink-0">{rupee}{getOfferPrice(item) * cart[item.id]}</div>
                       </div>
                       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                         <div className="text-xs text-gray-500">
                           <span className="line-through mr-2">{rupee}{getMrp(item)}</span>
-                          <span className="text-[#1A1A1A] font-semibold">{rupee}{getOffer(item)}</span>
+                          <span className="text-[#1A1A1A] font-semibold">{rupee}{getOfferPrice(item)}</span>
                         </div>
                         <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
                           <button

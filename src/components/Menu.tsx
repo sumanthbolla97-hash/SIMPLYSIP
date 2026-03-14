@@ -1,13 +1,13 @@
 ﻿﻿import { useEffect, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction, CSSProperties } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { get, onValue, ref } from 'firebase/database';
-import { db } from '../firebaseConfig';
-import { seedMenu } from '../data/seedMenu';
 import { X } from 'lucide-react';
+import { Product as ProductData } from '../types';
+import { getOfferPrice, getMrp } from '../pricing';
 
 interface MenuProps {
   cart: Record<string, number>;
+  menuItems: ProductData[];
   setCart: Dispatch<SetStateAction<Record<string, number>>>;
   onCheckout: () => void;
   onCartTotalChange: (total: number) => void;
@@ -74,28 +74,6 @@ function IngredientTicker({ desc }: { desc?: string }) {
   );
 }
 
-type NutritionInfo = {
-  calories: number;
-  vitamin: string;
-  preservatives: string;
-};
-
-type ProductData = {
-  id: string;
-  name: string;
-  image: string;
-  desc?: string;
-  tagline: string;
-  mrp?: number;
-  offerPrice?: number;
-  price?: number;
-  bestSeller?: boolean;
-  sweetness: number;
-  nutrition: NutritionInfo;
-  benefits: string[];
-  ingredients: string[];
-};
-
 const defaultBenefits = ["Detox support", "Gut health", "Skin glow", "Immunity boost"];
 const buildProduct = (item: any, index: number): ProductData => {
   const parts = (item.desc || "")
@@ -109,7 +87,7 @@ const buildProduct = (item: any, index: number): ProductData => {
     tagline: item.tagline || item.desc || "Cold-pressed blend crafted for daily balance",
     bestSeller: item.bestSeller ?? index === 0,
     sweetness,
-    nutrition: item.nutrition || {
+    nutrition: item.nutrition ?? {
       calories: 90 + (index % 6) * 15,
       vitamin: `${50 + (index % 5) * 10}%`,
       preservatives: "None"
@@ -171,10 +149,10 @@ function MenuCard({
               25% Off
             </span>
             <span className="text-[11px] sm:text-sm text-[#A7A29C] line-through font-medium">
-              {"\u20B9"}{product.mrp ?? product.price ?? 0}
+              {"\u20B9"}{product.mrp}
             </span>
             <span className="text-sm sm:text-lg font-semibold text-[#1D1C1A]">
-              {"\u20B9"}{product.offerPrice ?? product.price ?? 0}
+              {"\u20B9"}{product.offerPrice}
             </span>
           </div>
           <IngredientTicker desc={product.desc} />
@@ -367,7 +345,7 @@ function ProductPanel({
                   <div className="text-[9px] uppercase tracking-[0.2em] font-bold text-gray-400 mb-1">Total Price</div>
                   <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
                     <div className="text-xl sm:text-3xl font-bold text-[#1D1C1A]">
-                      {"\u20B9"}{product.offerPrice ?? product.price ?? 0}
+                      {"\u20B9"}{product.offerPrice}
                     </div>
                     {product.mrp && (
                       <div className="text-xs sm:text-sm text-gray-400 line-through font-medium mt-0.5 sm:mt-0">
@@ -411,11 +389,7 @@ function ProductPanel({
     </AnimatePresence>
   );
 }
-export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: MenuProps) {
-  const [menuItems, setMenuItems] = useState<any[]>(
-    seedMenu.map((item, index) => ({ id: `${index + 1}`, ...item }))
-  );
-  const [loading, setLoading] = useState(false);
+export default function Menu({ cart, menuItems, setCart, onCheckout, onCartTotalChange }: MenuProps) {
   const [selectedProduct, setSelectedProduct] = useState<ProductData | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [cartItems, setCartItems] = useState<Record<string, number>>(cart);
@@ -423,7 +397,6 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
   useEffect(() => {
     setCartItems(cart);
   }, [cart]);
-
 
   useEffect(() => {
     if (!isPanelOpen) {
@@ -453,56 +426,6 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
     const timer = window.setTimeout(() => setSelectedProduct(null), 250);
     return () => window.clearTimeout(timer);
   }, [isPanelOpen, selectedProduct]);
-  useEffect(() => {
-    const loadMenu = async () => {
-      try {
-        const snap = await get(ref(db, "menu"));
-        const val = snap.val();
-        const data = val ? Object.entries(val).map(([id, item]) => ({ id, ...(item as any) })) : [];
-        if (data.length > 0) {
-          setMenuItems(data);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadMenu();
-
-    const menuRef = ref(db, "menu");
-    const unsubscribe = onValue(
-      menuRef,
-      (snapshot) => {
-        const val = snapshot.val();
-        const data = val ? Object.entries(val).map(([id, item]) => ({ id, ...(item as any) })) : [];
-        if (data.length > 0) {
-          setMenuItems(data);
-        }
-      },
-      (err) => {
-        console.error("Menu realtime update failed:", err);
-      }
-    );
-
-    return () => unsubscribe();
-  }, []);
-
-  const roundUpTo9 = (value: number) => {
-    const base = Math.ceil(value);
-    const mod = base % 10;
-    return mod === 9 ? base : base + (9 - mod);
-  };
-
-  const getMrp = (item: any) => {
-    return Number(item.mrp ?? item.price ?? 0);
-  };
-
-  const getOffer = (item: any) => {
-    const mrp = getMrp(item);
-    const rawOffer = Number(item.offerPrice ?? (mrp * 0.75));
-    return roundUpTo9(rawOffer);
-  };
 
   const adjustCartQty = (id: string, delta: number) => {
     setCartItems((prev) => {
@@ -538,7 +461,7 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
       {
         ...item,
         mrp: getMrp(item),
-        offerPrice: getOffer(item)
+        offerPrice: getOfferPrice(item)
       },
       index
     )
@@ -549,7 +472,7 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
   const cartTotal = products.reduce((sum, item) => {
     const qty = cartItems[item.id] ?? 0;
     if (!qty) return sum;
-    return sum + (getOffer(item) * qty);
+    return sum + (getOfferPrice(item) * qty);
   }, 0);
   const subscriptionTotal =
     (cartItems.sub_weekly ? 699 : 0) + (cartItems.sub_monthly ? 2599 : 0);
@@ -596,7 +519,7 @@ export default function Menu({ cart, setCart, onCheckout, onCartTotalChange }: M
           <p className="text-[11px] sm:text-xs uppercase tracking-[0.3em] text-[#6F6A63] font-medium">Flat 25% Off {"\u2014"} Limited Launch Offer</p>
         </motion.div>
 
-        {loading ? (
+        {menuItems.length === 0 ? (
           <div className="text-center py-12 text-gray-500 font-medium">Loading collection...</div>
         ) : (
           <div className="space-y-16 sm:space-y-20">

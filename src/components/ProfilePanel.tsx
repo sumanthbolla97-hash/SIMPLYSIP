@@ -1,6 +1,7 @@
 import { useState, useEffect, ChangeEvent, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Package, MapPin, LogOut, ChevronDown, LayoutDashboard } from 'lucide-react';
+import { Order, UserProfile } from '../types';
 
 const SERVICEABLE_ZONES = [
   { name: "Select Area", lat: 0, lng: 0 },
@@ -70,25 +71,34 @@ function AccordionItem({ title, icon, children, startOpen = false }: { title: st
   );
 }
 
-function OrderCard({ order }: { order: any }) {
+function OrderCard({ order }: { order: Order }) {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'delivered': return 'bg-green-50 text-green-700 border-green-200';
+      case 'cancelled': return 'bg-red-50 text-red-700 border-red-200';
+      case 'paid': return 'bg-blue-50 text-blue-700 border-blue-200';
+      default: return 'bg-orange-50 text-orange-700 border-orange-200';
+    }
+  };
 
   return (
     <div className="border border-black/5 rounded-xl transition-shadow hover:shadow-md">
       <button onClick={() => setIsExpanded(!isExpanded)} className="w-full text-left p-4">
         <div className="flex justify-between items-start">
           <div>
-            <p className="text-xs uppercase tracking-widest text-gray-400">
-              {new Date(order.createdAt).toLocaleString('en-IN', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-              })}
-            </p>
-            <p className="font-semibold text-gray-800">{order.items.length} item{order.items.length > 1 ? 's' : ''}</p>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className={`px-2 py-0.5 rounded border text-[9px] font-bold uppercase tracking-widest ${getStatusColor(order.orderStatus)}`}>
+                {order.orderStatus || 'pending'}
+              </span>
+              <span className="text-[10px] uppercase tracking-widest text-gray-400">
+                {new Date(order.createdAt).toLocaleString('en-IN', {
+                  month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                })}
+              </span>
+            </div>
+            <p className="font-semibold text-gray-800">{order.items?.length || 0} item{(order.items?.length || 0) > 1 ? 's' : ''}</p>
           </div>
           <div className="flex items-center gap-4">
             <p className="font-bold text-lg text-[#1D1C1A]">{rupee}{order.total}</p>
@@ -107,13 +117,39 @@ function OrderCard({ order }: { order: any }) {
           >
             <div className="border-t border-black/5 px-4 pt-4 pb-5 space-y-3">
               <h4 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400">Order Summary</h4>
-              {order.items.map((item: any, index: number) => (
+              {order.items && order.items.map((item: any, index: number) => (
                 <div key={index} className="flex justify-between items-center text-sm">
                   <span className="text-gray-700 max-w-[80%] truncate">{item.name} &times;{item.qty}</span>
                   <span className="font-medium text-gray-800">{rupee}{item.price * item.qty}</span>
                 </div>
               ))}
+              
+              <div className="pt-3 border-t border-black/5 mt-3 grid grid-cols-2 gap-3">
+                <div>
+                  <span className="block text-[9px] uppercase tracking-widest text-gray-400 font-semibold mb-0.5">Payment</span>
+                  <span className="text-xs text-gray-800 capitalize font-medium">{order.paymentStatus || 'unpaid'}</span>
+                </div>
+                {order.deliverySlot && (
+                  <div>
+                    <span className="block text-[9px] uppercase tracking-widest text-gray-400 font-semibold mb-0.5">Delivery Slot</span>
+                    <span className="text-xs text-gray-800 font-medium">{order.deliverySlot}</span>
+                  </div>
+                )}
+                {order.assignedRider && (
+                  <div>
+                    <span className="block text-[9px] uppercase tracking-widest text-gray-400 font-semibold mb-0.5">Rider</span>
+                    <span className="text-xs text-gray-800 font-medium">{order.assignedRider}</span>
+                  </div>
+                )}
+              </div>
+
               <div className="pt-3 border-t border-black/5 mt-3 space-y-1">
+                 <p className="text-xs text-gray-500 truncate">
+                   <span className="font-semibold">Date & Time:</span> {new Date(order.createdAt).toLocaleString('en-IN', {
+                     year: 'numeric', month: 'short', day: 'numeric',
+                     hour: '2-digit', minute: '2-digit', hour12: true
+                   })}
+                 </p>
                  <p className="text-xs text-gray-500 truncate">
                    <span className="font-semibold">Order ID:</span> {order.id}
                  </p>
@@ -133,7 +169,7 @@ export default function ProfilePanel({
   isOpen,
   onClose,
   user,
-  userProfile,
+  userProfile, // This is actually the full UserProfile from App state
   orders,
   onLogout,
   onAddressUpdate,
@@ -142,9 +178,9 @@ export default function ProfilePanel({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  user: any;
-  userProfile: any;
-  orders: any[];
+  user: any; // This is the firebase auth user object
+  userProfile: Partial<UserProfile> | null;
+  orders: Order[];
   onLogout: () => void;
   onAddressUpdate: (data: any) => void;
   isAdmin?: boolean;
@@ -175,8 +211,8 @@ export default function ProfilePanel({
       setLocationAccuracy(userProfile.locationAccuracy || null);
 
       setFormData({
-        name: userProfile.name || user?.displayName || '',
-        phone: userProfile.phone || user?.phoneNumber || '',
+        name: userProfile.name ?? user?.displayName ?? '',
+        phone: userProfile.phone ?? user?.phoneNumber ?? '',
         address: userProfile.address || '',
         area: userProfile.area || ''
       });
@@ -187,7 +223,16 @@ export default function ProfilePanel({
   }, [userProfile, user]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === 'phone') {
+      // Allow only numbers and limit to 10 digits
+      const numericValue = value.replace(/[^0-9]/g, '');
+      if (numericValue.length <= 10) {
+        setFormData({ ...formData, [name]: numericValue });
+      }
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const stopLocationWatch = () => {
@@ -292,9 +337,20 @@ export default function ProfilePanel({
       alert("Sorry, your location is outside our service area and cannot be saved.");
       return;
     }
-    if (!formData.name.trim() || !formData.phone.trim() || !formData.address.trim() || !formData.area || formData.area === "Select Area" || !location) {
-      alert("Please fill all address fields and ensure location is detected before saving.");
-      return;
+    if (!formData.name.trim()) {
+      return alert("Please enter your full name.");
+    }
+    if (!/^\d{10}$/.test(formData.phone)) {
+      return alert("Please enter a valid 10-digit phone number.");
+    }
+    if (!formData.address.trim()) {
+      return alert("Please enter your complete address.");
+    }
+    if (!formData.area || formData.area === "Select Area") {
+      return alert("Please select your delivery area.");
+    }
+    if (!location) {
+      return alert("Please ensure your location is detected before saving.");
     }
     setIsSavingAddress(true);
     try {

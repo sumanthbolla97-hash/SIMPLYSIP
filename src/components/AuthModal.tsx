@@ -38,6 +38,18 @@ export default function AuthModal({ isOpen, mode, onClose, onModeChange }: AuthM
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (mode === 'signup') {
+      if (!fullName.trim()) {
+        setError("Full name is required.");
+        return;
+      }
+      if (phone && !/^\d{10}$/.test(phone)) {
+        setError("Please enter a valid 10-digit phone number.");
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       if (mode === "signup") {
@@ -178,7 +190,12 @@ export default function AuthModal({ isOpen, mode, onClose, onModeChange }: AuthM
                 type="tel"
                 placeholder="Phone Number"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => {
+                  const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                  if (numericValue.length <= 10) {
+                    setPhone(numericValue);
+                  }
+                }}
                 className="w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-base focus:outline-none focus:border-black transition-colors font-light"
               />
             )}

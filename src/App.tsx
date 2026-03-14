@@ -12,15 +12,17 @@ import FinalCTA from './components/FinalCTA';
 import AuthModal from './components/AuthModal';
 import ProfilePanel from './components/ProfilePanel';
 import { isSignInWithEmailLink, onAuthStateChanged, signInWithEmailLink, signOut, User } from 'firebase/auth';
-import { get, onValue, ref, update, query, orderByChild, equalTo } from 'firebase/database';
+import { get, onValue, ref, update } from 'firebase/database';
 import { auth, db } from './firebaseConfig';
+import { Product, UserProfile, Order } from './types';
+import { seedMenu } from './data/seedMenu';
 
 export default function App() {
   const ADMIN_EMAIL = "sumanthbolla97@gmail.com";
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [cart, setCart] = useState<Record<string, number>>({});
-  const [cartTotal, setCartTotal] = useState(0);
+  const [menuItems, setMenuItems] = useState<Product[]>([]);
   const [menuTotal, setMenuTotal] = useState(0);
   const [selectedPlan, setSelectedPlan] = useState<"weekly" | "monthly">("weekly");
   const [isPlanOpen, setIsPlanOpen] = useState(false);
@@ -28,8 +30,9 @@ export default function App() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [user, setUser] = useState<User | null>(null);
-  const [userProfile, setUserProfile] = useState<any | null>(null);
-  const [userOrders, setUserOrders] = useState<any[]>([]);
+  const [userProfile, setUserProfile] = useState<Partial<UserProfile> | null>(null);
+  const [userOrders, setUserOrders] = useState<Order[]>([]);
+  const [localUserOrders, setLocalUserOrders] = useState<Order[]>([]);
   const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL;
   const [isCartHydrated, setIsCartHydrated] = useState(false);
   const cartCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
@@ -153,24 +156,59 @@ export default function App() {
   }, [user]);
 
   useEffect(() => {
+    const menuRef = ref(db, "menu");
+    const unsubscribe = onValue(
+      menuRef,
+      (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+          const data: Product[] = Object.entries(val).map(([id, item]) => ({
+            id,
+            ...(item as Omit<Product, 'id'>),
+          }));
+          setMenuItems(data);
+        } else {
+          // Fallback or seed if necessary
+          setMenuItems(seedMenu.map((item, i) => ({ ...item, id: String(i + 1) } as Product)));
+        }
+      },
+      (err) => {
+        console.error("Menu realtime update failed:", err);
+        // Fallback to static seed data on error
+        setMenuItems(seedMenu.map((item, i) => ({ ...item, id: String(i + 1) } as Product)));
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
     if (!user) {
       setUserOrders([]);
       return;
     }
 
-    const userOrdersQuery = query(ref(db, 'orders'), orderByChild('userId'), equalTo(user.uid));
+    const ordersRef = ref(db, 'orders');
 
-    const unsubscribe = onValue(userOrdersQuery, (snapshot) => {
+    const unsubscribe = onValue(ordersRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const ordersArray = Object.entries(data).map(([id, orderData]) => ({
+        const allOrders: Order[] = Object.entries(data).map(([id, orderData]) => ({
           id,
           ...(orderData as any)
-        })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-        setUserOrders(ordersArray);
+        }));
+        
+        const myOrders: Order[] = allOrders.filter(o => 
+          o.userId === user.uid || (user.email && o.userEmail === user.email)
+        ).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        
+        setUserOrders(myOrders);
+        setLocalUserOrders((prev) => prev.filter((lo) => !myOrders.some((mo) => mo.id === lo.id)));
       } else {
         setUserOrders([]);
       }
+    }, (error) => {
+      console.error("Failed to load user orders:", error);
     });
     return () => unsubscribe();
   }, [user]);
@@ -212,6 +250,15 @@ export default function App() {
     setUserProfile((prev: any) => ({ ...(prev || {}), ...payload }));
   };
 
+  const handleOrderPlaced = (newOrder: Order) => {
+    setLocalUserOrders((prev) => {
+      if (prev.some((o) => o.id === newOrder.id)) return prev;
+      return [newOrder, ...prev];
+    });
+  };
+
+  const displayOrders: Order[] = [...localUserOrders, ...userOrders].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
   return (
     <div className="relative min-h-screen bg-[#FBFAF7] selection:bg-[#1D1C1A] selection:text-white">
       <AnimatePresence mode="wait">
@@ -235,13 +282,21 @@ export default function App() {
           >
             <Checkout 
               onBack={() => setIsCheckoutOpen(false)} 
-              user={user ? { ...user, ...(userProfile || {}) } : null}
+              user={user ? ({
+                ...(userProfile || {}),
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName,
+                phoneNumber: user.phoneNumber
+              } as UserProfile) : null}
+              menuItems={menuItems}
               cart={cart}
               onClearCart={() => setCart({})}
               onRemoveItem={handleRemoveItem}
               onIncrementItem={handleIncrementItem}
               onDecrementItem={handleDecrementItem}
               onAddressUpdate={handleAddressUpdate}
+              onOrderPlaced={handleOrderPlaced}
             />
           </motion.div>
         ) : (
@@ -266,6 +321,7 @@ export default function App() {
             <Hero onSubscribe={() => setIsPlanOpen(true)} />
             <Menu 
               cart={cart}
+              menuItems={menuItems}
               setCart={setCart}
               onCheckout={() => setIsCheckoutOpen(true)}
               onCartTotalChange={setMenuTotal}
@@ -357,7 +413,7 @@ export default function App() {
               onClose={() => setIsProfileOpen(false)}
               user={user}
               userProfile={userProfile}
-              orders={userOrders}
+              orders={displayOrders}
               onLogout={handleLogout}
               onAddressUpdate={handleAddressUpdate}
               isAdmin={isAdmin}
