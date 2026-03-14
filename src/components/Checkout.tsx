@@ -15,18 +15,33 @@ interface CheckoutProps {
   onAddressUpdate?: (addressData: any) => void;
 }
 
-const SECUNDERABAD_ZONES = [
-  "Select Area",
-  "Alwal",
-  "Bolarum",
-  "Bowenpally",
-  "Karkhana",
-  "Kompally",
-  "Malkajgiri",
-  "Marredpally",
-  "Sainikpuri",
-  "Tarnaka",
-  "Trimulgherry"
+const SERVICEABLE_ZONES = [
+  { name: "Select Area", lat: 0, lng: 0 },
+  // Secunderabad
+  { name: "Alwal", lat: 17.5182, lng: 78.5089 },
+  { name: "Bolarum", lat: 17.5313, lng: 78.5294 },
+  { name: "Bowenpally", lat: 17.4714, lng: 78.4863 },
+  { name: "Karkhana", lat: 17.4589, lng: 78.5015 },
+  { name: "Kompally", lat: 17.5393, lng: 78.4940 },
+  { name: "Malkajgiri", lat: 17.4503, lng: 78.5400 },
+  { name: "Marredpally", lat: 17.4522, lng: 78.5108 },
+  { name: "Sainikpuri", lat: 17.5015, lng: 78.5573 },
+  { name: "Tarnaka", lat: 17.4368, lng: 78.5313 },
+  { name: "Trimulgherry", lat: 17.4758, lng: 78.5063 },
+  // Hyderabad
+  { name: "Banjara Hills", lat: 17.4152, lng: 78.4358 },
+  { name: "Jubilee Hills", lat: 17.4313, lng: 78.4031 },
+  { name: "Ameerpet", lat: 17.4375, lng: 78.4483 },
+  { name: "Begumpet", lat: 17.4493, lng: 78.4634 },
+  { name: "Somajiguda", lat: 17.4261, lng: 78.4594 },
+  { name: "Himayatnagar", lat: 17.3991, lng: 78.4893 },
+  // Cyberabad
+  { name: "HITEC City", lat: 17.4442, lng: 78.3772 },
+  { name: "Gachibowli", lat: 17.4401, lng: 78.3489 },
+  { name: "Madhapur", lat: 17.4485, lng: 78.3908 },
+  { name: "Kondapur", lat: 17.4614, lng: 78.3640 },
+  { name: "Manikonda", lat: 17.4153, lng: 78.3739 },
+  { name: "Kukatpally", lat: 17.4858, lng: 78.4018 },
 ];
 
 const BULLET = "\u2022";
@@ -100,10 +115,6 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [menuItems, setMenuItems] = useState<any[]>([]);
-  const [location, setLocation] = useState("");
-  const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
-  const [locationError, setLocationError] = useState<string | null>(null);
-  const [isLocating, setIsLocating] = useState(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const [formData, setFormData] = useState({
     name: user?.displayName || user?.name || '',
@@ -113,6 +124,7 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
   });
   const [addressType, setAddressType] = useState(user?.addressType || 'Home');
   const [isAddressLocked, setIsAddressLocked] = useState(false);
+  const [isServiceable, setIsServiceable] = useState<boolean>(true);
   const rupee = "\u20B9";
 
   useEffect(() => {
@@ -177,33 +189,39 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
     };
   }, [onBack]);
 
-  const requestLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationError("Location not supported");
-      return;
-    }
-    setIsLocating(true);
-    setLocationError(null);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude.toFixed(6);
-        const lng = pos.coords.longitude.toFixed(6);
-        const acc = Math.round(pos.coords.accuracy);
-        setLocation(`Lat ${lat}, Lng ${lng}`);
-        setLocationAccuracy(acc);
-        setIsLocating(false);
-      },
-      (err) => {
-        setLocationError(err.message || "Location permission denied");
-        setIsLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-    );
+  const checkServiceability = (lat: number, lng: number) => {
+    // Hyderabad / Secunderabad / Cyberabad center radius check
+    const centerLat = 17.3850;
+    const centerLng = 78.4867;
+    const R = 6371; // Earth's radius in km
+    
+    const dLat = (lat - centerLat) * (Math.PI / 180);
+    const dLng = (lng - centerLng) * (Math.PI / 180);
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(centerLat * (Math.PI / 180)) * Math.cos(lat * (Math.PI / 180)) *
+              Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return (R * c) <= 40; // Serviceable within 40km radius
   };
 
   useEffect(() => {
-    requestLocation();
-  }, []);
+    if (user?.location) {
+      const parts = user.location.replace(/Lat|Lng/g, '').split(',');
+      if (parts.length === 2) {
+        const lat = parseFloat(parts[0]);
+        const lng = parseFloat(parts[1]);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          setIsServiceable(checkServiceability(lat, lng));
+        } else {
+          setIsServiceable(false);
+        }
+      } else {
+        setIsServiceable(false);
+      }
+    } else {
+      setIsServiceable(false);
+    }
+  }, [user?.location]);
 
   const roundUpTo9 = (value: number) => {
     const base = Math.ceil(value);
@@ -265,12 +283,16 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
       alert("Your cart is empty.");
       return;
     }
-    if (!location) {
-      alert("Please allow location access for accurate delivery.");
+    if (!user?.location) {
+      alert("Please set a delivery location in your profile.");
       return;
     }
-    if (locationAccuracy && locationAccuracy > 500) {
-      alert(`Location accuracy is ${locationAccuracy}m. Please retry for 500m accuracy.`);
+    if (user?.locationAccuracy && user.locationAccuracy > 1000) {
+      alert(`Your saved location accuracy is poor (${user.locationAccuracy}m). Please update it in your profile.`);
+      return;
+    }
+    if (!isServiceable) {
+      alert("Sorry, we currently only deliver to Cyberabad, Secunderabad, and Hyderabad.");
       return;
     }
     if (formData.name && formData.phone && formData.address && formData.area && formData.area !== "Select Area") {
@@ -288,11 +310,13 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
         return `${item.name}${desc} x${cart[item.id]} - ${rupee}${getOffer(item)} each`;
       })
       .join("\n");
-    const accuracyText = locationAccuracy ? ` (accuracy ${locationAccuracy}m)` : "";
+    const location = user?.location || 'N/A';
+    const accuracyText = user?.locationAccuracy ? ` (accuracy ${user.locationAccuracy}m)` : "";
     const message = `Hi Simply Sip, I placed an order.\n\nItems:\n${itemsText}\n\nSubtotal: ${rupee}${cartTotal}\nDelivery: ${rupee}${deliveryFee}\nTotal: ${rupee}${grandTotal}\n\nName: ${formData.name}\nAddress: ${formData.address}\nArea: ${formData.area}\nLocation: ${location}${accuracyText}\nPayment Done.`;
     setOrderId(null);
     setStep(3);
     const newRef = push(ref(db, "orders"));
+    const orderId = newRef.key;
     void set(newRef, {
       userId: user?.uid || null,
       userEmail: user?.email || null,
@@ -306,6 +330,7 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
       deliveryFee,
       total: grandTotal,
       subscriptionType,
+      paymentId: orderId,
       paymentStatus: "paid",
       orderStatus: "pending",
       deliverySlot: "",
@@ -318,12 +343,12 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
         address: formData.address,
         addressType: addressType
       },
-      location,
-      locationAccuracy,
+      location: user?.location || null,
+      locationAccuracy: user?.locationAccuracy || null,
       status: "pending",
       createdAt: Date.now()
     })
-      .then(() => setOrderId(newRef.key))
+      .then(() => setOrderId(orderId))
       .catch((err) => console.error("Failed to save order:", err));
     onClearCart();
   };
@@ -335,7 +360,8 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
         return `${item.name}${desc} x${cart[item.id]} - ${rupee}${getOffer(item)} each`;
       })
       .join("\n");
-    const accuracyText = locationAccuracy ? ` (accuracy ${locationAccuracy}m)` : "";
+    const location = user?.location || 'N/A';
+    const accuracyText = user?.locationAccuracy ? ` (accuracy ${user.locationAccuracy}m)` : "";
     const message = `Hi Simply Sip, I placed an order.\n\nItems:\n${itemsText}\n\nSubtotal: ${rupee}${cartTotal}\nDelivery: ${rupee}${deliveryFee}\nTotal: ${rupee}${grandTotal}\n\nName: ${formData.name}\nAddress: ${formData.address}\nArea: ${formData.area}\nLocation: ${location}${accuracyText}\nOrder via WhatsApp.`;
     const whatsappUrl = `https://wa.me/917799934943?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -441,137 +467,99 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
             </div>
 
             <div className="bg-white p-6 md:p-8 border border-black/5 rounded-3xl shadow-[0_30px_70px_-55px_rgba(0,0,0,0.35)] space-y-8">
-              <div className="text-xs font-semibold tracking-[0.2em] uppercase text-gray-400">Delivery Details</div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <label className="block text-[10px] font-semibold tracking-[0.2em] uppercase text-gray-400">Full Name</label>
-                  <input 
-                    type="text" 
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    disabled={isAddressLocked}
-                    className="w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-base focus:outline-none focus:border-black transition-colors font-light disabled:opacity-60 disabled:cursor-not-allowed"
-                    placeholder="Full Name"
-                    required
-                  />
-                </div>
-                <div className="space-y-3">
-                  <label className="block text-[10px] font-semibold tracking-[0.2em] uppercase text-gray-400">Phone Number</label>
-                  <input 
-                    type="tel" 
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    disabled={isAddressLocked}
-                    className="w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-base focus:outline-none focus:border-black transition-colors font-light disabled:opacity-60 disabled:cursor-not-allowed"
-                    placeholder="+91"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <label className="block text-[10px] font-semibold tracking-[0.2em] uppercase text-gray-400">Delivery Area</label>
-                  <div className="relative">
-                    <select 
-                      name="area"
-                      value={formData.area}
-                      onChange={handleInputChange}
-                      disabled={isAddressLocked}
-                      className="w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-base focus:outline-none focus:border-black transition-colors appearance-none font-light disabled:opacity-60 disabled:cursor-not-allowed"
-                      required
-                    >
-                      {SECUNDERABAD_ZONES.map(zone => (
-                        <option key={zone} value={zone} disabled={zone === "Select Area"}>{zone}</option>
-                      ))}
-                    </select>
-                    <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400">{"\u25BE"}</span>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <label className="block text-[10px] font-semibold tracking-[0.2em] uppercase text-gray-400">Complete Address</label>
-                  <textarea 
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    disabled={isAddressLocked}
-                    className="w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-base focus:outline-none focus:border-black transition-colors resize-none h-[110px] font-light disabled:opacity-60 disabled:cursor-not-allowed"
-                    placeholder="House No, Street, Landmark"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-[10px] font-semibold tracking-[0.2em] uppercase text-gray-400">Address Type</label>
-                <div className="flex items-center gap-x-6">
-                    {['Home', 'Office', 'Other'].map(type => (
-                        <label key={type} className="flex items-center gap-2">
-                            <input 
-                                type="radio" 
-                                name="addressType" 
-                                value={type} 
-                                checked={addressType === type}
-                                onChange={(e) => setAddressType(e.target.value)}
-                                disabled={isAddressLocked}
-                                className="h-4 w-4 text-black border-gray-300 focus:ring-black disabled:cursor-not-allowed"
-                            />
-                            <span className="text-sm text-gray-600">{type}</span>
-                        </label>
-                    ))}
-                </div>
-              </div>
-
-              <div className="pt-4">
-                {!isAddressLocked ? (
-                  <button 
-                      type="button" 
-                      onClick={handleSaveAddress}
-                      className="px-5 py-3 rounded-full border border-black/10 text-[10px] font-semibold tracking-[0.2em] uppercase text-[#1D1C1A] hover:border-black/20 transition-colors"
-                  >
-                      Save Address
-                  </button>
-                ) : (
-                  <button 
-                      type="button" 
-                      onClick={handleEditAddress}
-                      className="px-5 py-3 rounded-full border border-black/10 text-[10px] font-semibold tracking-[0.2em] uppercase text-[#1D1C1A] hover:border-black/20 transition-colors"
-                  >
-                      Edit Address
-                  </button>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-[10px] font-semibold tracking-[0.2em] uppercase text-gray-400">Location (Auto-detected)</label>
-                <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-                  <input 
-                    type="text"
-                    value={location || (isLocating ? "Detecting location..." : "")}
-                    readOnly
-                    className="w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-base focus:outline-none font-light"
-                    placeholder="Location required"
-                  />
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-semibold tracking-[0.2em] uppercase text-gray-400">Delivery Details</div>
+                {isAddressLocked && (
                   <button
                     type="button"
-                    onClick={requestLocation}
-                    className="px-5 py-3 rounded-full border border-black/10 text-[10px] font-semibold tracking-[0.2em] uppercase text-[#1D1C1A] hover:border-black/20 transition-colors"
+                    onClick={handleEditAddress}
+                    className="px-4 py-2 rounded-full border border-black/10 text-[9px] font-semibold tracking-[0.15em] uppercase text-[#1D1C1A] hover:border-black/20 transition-colors"
                   >
-                    {isLocating ? "Locating..." : "Retry"}
+                    Edit
                   </button>
+                )}
+              </div>
+
+              {isAddressLocked ? (
+                <div className="text-sm text-gray-600 space-y-2 font-light">
+                  <p className="font-semibold text-base text-black">{formData.name}</p>
+                  <p>{formData.address}</p>
+                  <p>{formData.area}</p>
+                  <p>{formData.phone}</p>
+                  <p className="text-xs uppercase tracking-widest text-gray-500 pt-1">{addressType}</p>
                 </div>
-                {locationAccuracy !== null && (
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
-                    Accuracy: {locationAccuracy}m
+              ) : (
+                <>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <label className="block text-[10px] font-semibold tracking-[0.2em] uppercase text-gray-400">Full Name</label>
+                      <input type="text" name="name" value={formData.name} onChange={handleInputChange} className="w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-base focus:outline-none focus:border-black transition-colors font-light" placeholder="Full Name" required />
+                    </div>
+                    <div className="space-y-3">
+                      <label className="block text-[10px] font-semibold tracking-[0.2em] uppercase text-gray-400">Phone Number</label>
+                      <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-base focus:outline-none focus:border-black transition-colors font-light" placeholder="+91" required />
+                    </div>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <label className="block text-[10px] font-semibold tracking-[0.2em] uppercase text-gray-400">Delivery Area</label>
+                      <div className="relative">
+                        <select name="area" value={formData.area} onChange={handleInputChange} className="w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-base focus:outline-none focus:border-black transition-colors appearance-none font-light" required>
+                          {SERVICEABLE_ZONES.map(zone => (
+                            <option key={zone.name} value={zone.name} disabled={zone.name === "Select Area"}>{zone.name}</option>
+                          ))}
+                        </select>
+                        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400">{"\u25BE"}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <label className="block text-[10px] font-semibold tracking-[0.2em] uppercase text-gray-400">Complete Address</label>
+                      <textarea name="address" value={formData.address} onChange={handleInputChange} className="w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-base focus:outline-none focus:border-black transition-colors resize-none h-[110px] font-light" placeholder="House No, Street, Landmark" required />
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <label className="block text-[10px] font-semibold tracking-[0.2em] uppercase text-gray-400">Address Type</label>
+                    <div className="flex items-center gap-x-6">
+                      {['Home', 'Office', 'Other'].map(type => (
+                        <label key={type} className="flex items-center gap-2">
+                          <input type="radio" name="addressType" value={type} checked={addressType === type} onChange={(e) => setAddressType(e.target.value)} className="h-4 w-4 text-black border-gray-300 focus:ring-black" />
+                          <span className="text-sm text-gray-600">{type}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="pt-4">
+                    <button type="button" onClick={handleSaveAddress} className="px-5 py-3 rounded-full border border-black/10 text-[10px] font-semibold tracking-[0.2em] uppercase text-[#1D1C1A] hover:border-black/20 transition-colors">
+                      Save Address
+                    </button>
+                  </div>
+                </>
+              )}
+
+              <div className="space-y-3">
+                <label className="block text-[10px] font-semibold tracking-[0.2em] uppercase text-gray-400">Delivery Location</label>
+                <div className="w-full rounded-2xl border border-black/10 bg-gray-50 px-4 py-3 text-base text-gray-600 font-light">
+                  {user?.location || "No location set in profile."}
+                </div>
+                {user?.locationAccuracy && (
+                  <div className={`text-[10px] uppercase tracking-[0.2em] font-semibold ${
+                    user.locationAccuracy <= 10 ? 'text-green-600' :
+                    user.locationAccuracy <= 50 ? 'text-yellow-600' :
+                    user.locationAccuracy <= 1000 ? 'text-gray-500' :
+                    'text-red-600'
+                  }`}>
+                    Saved Accuracy: {user.locationAccuracy}m
                   </div>
                 )}
-                {locationError && (
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
-                    {locationError}
+                {!isServiceable && user?.location && (
+                  <div className="mt-2 text-xs font-semibold text-red-600 bg-red-50 p-3 rounded-xl border border-red-100">
+                    Location Unserviceable. We currently only deliver to Cyberabad, Secunderabad, and Hyderabad.
                   </div>
+                )}
+                {!user?.location && (
+                    <div className="mt-2 text-xs font-semibold text-yellow-600 bg-yellow-50 p-3 rounded-xl border border-yellow-100">
+                        Please go to your profile to set a delivery location.
+                    </div>
                 )}
               </div>
             </div>
@@ -579,9 +567,10 @@ export default function Checkout({ user, onBack, cart, onClearCart, onRemoveItem
             <div className="pt-10 border-t border-black/10">
               <button 
                 type="submit"
-                className="w-full py-5 bg-[#1A1A1A] text-white font-semibold tracking-[0.1em] hover:bg-black transition-all duration-500 uppercase text-[11px] shadow-xl shadow-black/5 hover:shadow-black/15 hover:-translate-y-0.5"
+                disabled={!isServiceable}
+                className="w-full py-5 bg-[#1A1A1A] text-white font-semibold tracking-[0.1em] hover:bg-black transition-all duration-500 uppercase text-[11px] shadow-xl shadow-black/5 hover:shadow-black/15 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
               >
-                Proceed to Payment
+                {isServiceable ? "Proceed to Payment" : "Unserviceable Location"}
               </button>
             </div>
           </form>

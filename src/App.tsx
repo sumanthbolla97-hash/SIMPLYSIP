@@ -10,8 +10,9 @@ import StickyCTA from './components/StickyCTA';
 import AdminDashboard from './components/AdminDashboard';
 import FinalCTA from './components/FinalCTA';
 import AuthModal from './components/AuthModal';
-import { isSignInWithEmailLink, onAuthStateChanged, signInWithEmailLink, signOut } from 'firebase/auth';
-import { get, onValue, ref, update } from 'firebase/database';
+import ProfilePanel from './components/ProfilePanel';
+import { isSignInWithEmailLink, onAuthStateChanged, signInWithEmailLink, signOut, User } from 'firebase/auth';
+import { get, onValue, ref, update, query, orderByChild, equalTo } from 'firebase/database';
 import { auth, db } from './firebaseConfig';
 
 export default function App() {
@@ -24,10 +25,11 @@ export default function App() {
   const [selectedPlan, setSelectedPlan] = useState<"weekly" | "monthly">("weekly");
   const [isPlanOpen, setIsPlanOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<any | null>(null);
-  const [isLogoutOpen, setIsLogoutOpen] = useState(false);
+  const [userOrders, setUserOrders] = useState<any[]>([]);
   const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL;
   const [isCartHydrated, setIsCartHydrated] = useState(false);
   const cartCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
@@ -81,9 +83,6 @@ export default function App() {
       setUser(currentUser);
       if (currentUser) {
         setIsAuthOpen(false);
-        if (currentUser.email?.toLowerCase() === ADMIN_EMAIL) {
-          setIsAdminOpen(true);
-        }
       } else {
         setIsAdminOpen(false);
         setIsCartHydrated(false);
@@ -154,6 +153,29 @@ export default function App() {
   }, [user]);
 
   useEffect(() => {
+    if (!user) {
+      setUserOrders([]);
+      return;
+    }
+
+    const userOrdersQuery = query(ref(db, 'orders'), orderByChild('userId'), equalTo(user.uid));
+
+    const unsubscribe = onValue(userOrdersQuery, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const ordersArray = Object.entries(data).map(([id, orderData]) => ({
+          id,
+          ...(orderData as any)
+        })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        setUserOrders(ordersArray);
+      } else {
+        setUserOrders([]);
+      }
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  useEffect(() => {
     if (!user || !isCartHydrated) return;
     const handle = window.setTimeout(() => {
       update(ref(db, `users/${user.uid}`), { cart, cartUpdatedAt: Date.now() }).catch((err) => {
@@ -180,7 +202,7 @@ export default function App() {
 
   const handleLogout = async () => {
     await signOut(auth);
-    setIsLogoutOpen(false);
+    setIsProfileOpen(false);
   };
 
   const handleAddressUpdate = async (addressData: any) => {
@@ -236,9 +258,10 @@ export default function App() {
                 setAuthMode("login");
                 setIsAuthOpen(true);
               }}
-              onLogout={() => setIsLogoutOpen(true)}
+              onLogout={handleLogout}
               isAdmin={isAdmin}
               onAdminOpen={() => setIsAdminOpen(true)}
+              onProfileToggle={() => setIsProfileOpen(true)}
             />
             <Hero onSubscribe={() => setIsPlanOpen(true)} />
             <Menu 
@@ -328,33 +351,21 @@ export default function App() {
               onClose={() => setIsAuthOpen(false)}
               onModeChange={(mode) => setAuthMode(mode)}
             />
-
-            {isLogoutOpen && (
-              <div className="fixed inset-0 z-[80] bg-black/40 backdrop-blur-sm flex items-center justify-center px-4">
-                <div className="w-full max-w-sm bg-white rounded-[1.8rem] p-6 border border-black/5 shadow-[0_50px_120px_-80px_rgba(0,0,0,0.5)]">
-                  <div className="text-[11px] uppercase tracking-[0.4em] text-[#6F6A63] mb-3">
-                    Confirm Logout
-                  </div>
-                  <p className="text-sm text-[#1D1C1A] mb-6">
-                    Do you want to log out?
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={handleLogout}
-                      className="flex-1 py-3 bg-[#1A1A1A] text-white font-semibold tracking-[0.1em] uppercase text-[11px] rounded-full hover:bg-black transition-colors"
-                    >
-                      Yes, Logout
-                    </button>
-                    <button
-                      onClick={() => setIsLogoutOpen(false)}
-                      className="flex-1 py-3 border border-black/10 text-[#1A1A1A] font-semibold tracking-[0.1em] uppercase text-[11px] rounded-full hover:border-black/20 transition-colors"
-                    >
-                      No, Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            
+            <ProfilePanel
+              isOpen={isProfileOpen}
+              onClose={() => setIsProfileOpen(false)}
+              user={user}
+              userProfile={userProfile}
+              orders={userOrders}
+              onLogout={handleLogout}
+              onAddressUpdate={handleAddressUpdate}
+              isAdmin={isAdmin}
+              onAdminOpen={() => {
+                setIsProfileOpen(false);
+                setIsAdminOpen(true);
+              }}
+            />
 
             {/* Hidden Admin Trigger in Footer */}
             <footer className="py-12 text-center text-xs font-medium tracking-wide text-gray-400 bg-white">
