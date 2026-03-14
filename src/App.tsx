@@ -40,7 +40,17 @@ export default function App() {
     (cart.sub_weekly ? 799 : 0) + (cart.sub_monthly ? 2599 : 0);
   const combinedTotal = menuTotal + subscriptionTotal;
 
+  const requireAuth = () => {
+    if (!user) {
+      setAuthMode("login");
+      setIsAuthOpen(true);
+      return false;
+    }
+    return true;
+  };
+
   const handleSubscription = (plan: "weekly" | "monthly") => {
+    if (!requireAuth()) return;
     setCart((prev) => {
       const next = { ...prev };
       delete next.sub_weekly;
@@ -54,6 +64,7 @@ export default function App() {
   };
 
   const handleRemoveItem = (id: string) => {
+    if (!requireAuth()) return;
     setCart((prev) => {
       const next = { ...prev };
       delete next[id];
@@ -62,6 +73,7 @@ export default function App() {
   };
 
   const handleIncrementItem = (id: string) => {
+    if (!requireAuth()) return;
     setCart((prev) => ({
       ...prev,
       [id]: (prev[id] ?? 0) + 1
@@ -69,6 +81,7 @@ export default function App() {
   };
 
   const handleDecrementItem = (id: string) => {
+    if (!requireAuth()) return;
     setCart((prev) => {
       const next = { ...prev };
       if (!next[id]) return prev;
@@ -90,50 +103,25 @@ export default function App() {
         setIsAdminOpen(false);
         setIsCartHydrated(false);
         setUserProfile(null);
+        setCart({});
+        window.localStorage.removeItem("simplysip_cart");
       }
     });
   }, []);
 
   useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem("simplysip_cart");
-      if (saved) {
-        setCart(JSON.parse(saved));
-      }
-    } catch {
-      // ignore malformed local storage
-    }
-  }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem("simplysip_cart", JSON.stringify(cart));
-  }, [cart]);
-
-  useEffect(() => {
     if (!user) return;
     const hydrateCart = async () => {
-      const localCart = (() => {
-        try {
-          const saved = window.localStorage.getItem("simplysip_cart");
-          return saved ? JSON.parse(saved) : null;
-        } catch {
-          return null;
-        }
-      })();
       try {
         const snap = await get(ref(db, `users/${user.uid}`));
         const data = snap.exists() ? (snap.val() as any) : null;
         if (data?.cart && Object.keys(data.cart).length > 0) {
           setCart(data.cart);
-        } else if (localCart && Object.keys(localCart).length > 0) {
-          setCart(localCart);
-          await update(ref(db, `users/${user.uid}`), { cart: localCart });
+        } else {
+          setCart({});
         }
       } catch (err) {
         console.warn("Failed to hydrate cart from database:", err);
-        if (localCart && Object.keys(localCart).length > 0) {
-          setCart(localCart);
-        }
       } finally {
         setIsCartHydrated(true);
       }
@@ -257,6 +245,15 @@ export default function App() {
     });
   };
 
+  const handleOpenCheckout = () => {
+    if (!user) {
+      setAuthMode("login");
+      setIsAuthOpen(true);
+    } else {
+      setIsCheckoutOpen(true);
+    }
+  };
+
   const displayOrders: Order[] = Array.from(
     new Map([...localUserOrders, ...userOrders].map((o) => [o.id, o])).values()
   ).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -324,8 +321,9 @@ export default function App() {
             <Menu 
               cart={cart}
               menuItems={menuItems}
-              setCart={setCart}
-              onCheckout={() => setIsCheckoutOpen(true)}
+              onIncrement={handleIncrementItem}
+              onDecrement={handleDecrementItem}
+              onCheckout={handleOpenCheckout}
               onCartTotalChange={setMenuTotal}
             />
             <Subscription 
@@ -334,12 +332,12 @@ export default function App() {
               onPlanChange={(plan) => setSelectedPlan(plan)}
             />
             <Story />
-            <FinalCTA onSubscribe={() => setIsCheckoutOpen(true)} />
+            <FinalCTA onSubscribe={handleOpenCheckout} />
             <StickyCTA 
               onSubscribePlan={handleSubscription}
               selectedPlan={selectedPlan}
               onPlanChange={setSelectedPlan}
-              onCheckout={() => setIsCheckoutOpen(true)}
+              onCheckout={handleOpenCheckout}
               cartCount={cartCount}
             />
 

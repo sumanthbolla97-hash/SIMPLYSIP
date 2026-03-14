@@ -8,7 +8,8 @@ import { getOfferPrice, getMrp } from '../pricing';
 interface MenuProps {
   cart: Record<string, number>;
   menuItems: ProductData[];
-  setCart: Dispatch<SetStateAction<Record<string, number>>>;
+  onIncrement: (id: string) => void;
+  onDecrement: (id: string) => void;
   onCheckout: () => void;
   onCartTotalChange: (total: number) => void;
 }
@@ -389,7 +390,7 @@ function ProductPanel({
     </AnimatePresence>
   );
 }
-export default function Menu({ cart, menuItems, setCart, onCheckout, onCartTotalChange }: MenuProps) {
+export default function Menu({ cart, menuItems, onIncrement, onDecrement, onCheckout, onCartTotalChange }: MenuProps) {
   const [selectedProduct, setSelectedProduct] = useState<ProductData | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [cartItems, setCartItems] = useState<Record<string, number>>(cart);
@@ -427,27 +428,12 @@ export default function Menu({ cart, menuItems, setCart, onCheckout, onCartTotal
     return () => window.clearTimeout(timer);
   }, [isPanelOpen, selectedProduct]);
 
-  const adjustCartQty = (id: string, delta: number) => {
-    setCartItems((prev) => {
-      const current = prev[id] ?? 0;
-      const nextQty = Math.max(0, current + delta);
-      const next = { ...prev };
-      if (nextQty === 0) {
-        delete next[id];
-      } else {
-        next[id] = nextQty;
-      }
-      setCart(next);
-      return next;
-    });
+  const handleIncrementClick = (product: ProductData) => {
+    onIncrement(product.id);
   };
 
-  const handleIncrement = (product: ProductData) => {
-    adjustCartQty(product.id, 1);
-  };
-
-  const handleDecrement = (product: ProductData) => {
-    adjustCartQty(product.id, -1);
+  const handleDecrementClick = (product: ProductData) => {
+    onDecrement(product.id);
   };
 
   const openPanel = (product: ProductData) => {
@@ -495,8 +481,8 @@ export default function Menu({ cart, menuItems, setCart, onCheckout, onCartTotal
           <MenuCard
             product={item}
             onClick={openPanel}
-            onIncrement={handleIncrement}
-            onDecrement={handleDecrement}
+            onIncrement={handleIncrementClick}
+            onDecrement={handleDecrementClick}
             qty={cartItems[item.id] ?? 0}
           />
         </motion.div>
@@ -556,8 +542,8 @@ export default function Menu({ cart, menuItems, setCart, onCheckout, onCartTotal
         product={selectedProduct}
         isOpen={isPanelOpen}
         onClose={() => setIsPanelOpen(false)}
-        onIncrement={handleIncrement}
-        onDecrement={handleDecrement}
+        onIncrement={handleIncrementClick}
+        onDecrement={handleDecrementClick}
         qty={selectedProduct ? (cartItems[selectedProduct.id] ?? 0) : 0}
       />
     </section>
